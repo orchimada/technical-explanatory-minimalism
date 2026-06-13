@@ -1,5 +1,5 @@
 ---
-name: design
+name: technical-explanatory-minimalism
 description: >
   Create concise, minimalist technical diagrams, schematics, and explanatory
   illustrations (SVG-first), and design clean minimalist web/interface design
