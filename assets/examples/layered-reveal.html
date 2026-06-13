@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exploded view — interactive figure</title>
+<!--
+  GOLD-STANDARD INTERACTIVE FIGURE — progressive disclosure.
+  Demonstrates: exploded-view slider · X-ray toggle (reveal the hidden) ·
+  tap-to-highlight a part · dashed reassembly axis · in-place labels that travel
+  with their part · color-as-identity · dark/light parity · quiet chrome.
+  Self-contained: no build, no network. Copy and swap the layers.
+-->
+<style>
+  :root{
+    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3; --accent:#d6453d;
+    --shell:#8a8a8e; --board:#3aa676; --batt:#e0a93b;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; }
+  }
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
+  main{max-width:680px;margin:0 auto;padding:48px 24px 96px;}
+  h1{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
+  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 28px;}
+  p{font-size:16px;}
+  figure{margin:28px 0 0;}
+  .stage{width:100%;height:auto;display:block;}
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:14px;
+    padding-top:14px;border-top:1px solid var(--hair);}
+  label.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
+  input[type=range]{accent-color:var(--accent);width:140px;}
+  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
+  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
+  /* layers */
+  .layer{cursor:pointer;transition:transform .12s ease-out;}
+  .face{stroke:var(--ink);stroke-width:2;stroke-linejoin:round;transition:fill-opacity .2s,stroke .2s;}
+  .face.top  {fill:var(--c);fill-opacity:.42;}
+  .face.front{fill:var(--c);fill-opacity:.72;}
+  .face.side {fill:var(--c);fill-opacity:.92;}
+  .detail{stroke:var(--ink);fill:none;stroke-width:1.5;opacity:.7;}
+  .layer.xray .face{fill-opacity:.06;stroke-dasharray:4 3;}
+  .layer.dim .face{fill-opacity:.14;}
+  .layer.dim .detail{opacity:.15;}
+  .layer.sel .face{stroke:var(--accent);}
+  .axis{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4;opacity:0;transition:opacity .2s;}
+  .axis.on{opacity:.8;}
+  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
+  .label{font-size:13px;fill:var(--ink);}
+  .desig{font-size:12px;fill:var(--ink);font-family:ui-monospace,"SF Mono",monospace;}
+  text{user-select:none;}
+</style>
+
+<main>
+  <h1>Inside the device</h1>
+  <p class="cap">Drag the slider to explode · tap a layer · toggle X-ray</p>
+
+  <p>Three layers stack into the finished unit: the <b style="color:#8a8a8e">shell</b> that
+  you touch, the <b style="color:#3aa676">board</b> that does the work, and the
+  <b style="color:#e0a93b">battery</b> that powers it. Pull them apart to see how they
+  assemble; switch on <b>X-ray</b> to see the board through the shell.</p>
+
+  <figure>
+    <svg class="stage" viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg" aria-label="Exploded device, three layers">
+      <!-- reassembly axis (behind layers) -->
+      <line id="axis" class="axis" x1="353" y1="124" x2="353" y2="282"/>
+
+      <!-- BATTERY (bottom of stack, drawn first = back) -->
+      <g class="layer" id="batt" style="--c:var(--batt)" tabindex="0" role="button" aria-label="Battery layer">
+        <path class="face top"  d="M200 238 L226 212 L506 212 L480 238 Z"/>
+        <path class="face side" d="M480 238 L506 212 L506 256 L480 282 Z"/>
+        <rect class="face front" x="200" y="238" width="280" height="44" rx="4"/>
+        <text class="detail" x="214" y="266" font-size="18" font-family="ui-monospace,monospace" stroke="none" fill="var(--ink)" opacity=".7">＋        −</text>
+        <line class="leader" x1="506" y1="247" x2="540" y2="247"/>
+        <text x="548" y="244" class="label">Battery</text>
+        <text x="548" y="260" class="desig">L3 · power</text>
+      </g>
+
+      <!-- BOARD (middle) -->
+      <g class="layer" id="board" style="--c:var(--board)" tabindex="0" role="button" aria-label="Board layer">
+        <path class="face top"  d="M200 194 L226 168 L506 168 L480 194 Z"/>
+        <path class="face side" d="M480 194 L506 168 L506 212 L480 238 Z"/>
+        <rect class="face front" x="200" y="194" width="280" height="44" rx="4"/>
+        <rect class="detail" x="300" y="205" width="42" height="22" rx="2"/>
+        <line class="detail" x1="220" y1="216" x2="296" y2="216"/>
+        <line class="detail" x1="346" y1="210" x2="430" y2="210"/>
+        <line class="detail" x1="346" y1="222" x2="430" y2="222"/>
+        <line class="leader" x1="506" y1="203" x2="540" y2="203"/>
+        <text x="548" y="200" class="label">Board</text>
+        <text x="548" y="216" class="desig">L2 · logic</text>
+      </g>
+
+      <!-- SHELL (top of stack, drawn last = front) -->
+      <g class="layer" id="shell" style="--c:var(--shell)" tabindex="0" role="button" aria-label="Shell layer">
+        <path class="face top"  d="M200 150 L226 124 L506 124 L480 150 Z"/>
+        <path class="face side" d="M480 150 L506 124 L506 168 L480 194 Z"/>
+        <rect class="face front" x="200" y="150" width="280" height="44" rx="4"/>
+        <circle class="detail" cx="440" cy="172" r="9"/>
+        <line class="leader" x1="506" y1="159" x2="540" y2="159"/>
+        <text x="548" y="156" class="label">Shell</text>
+        <text x="548" y="172" class="desig">L1 · cover</text>
+      </g>
+    </svg>
+
+    <div class="controls">
+      <label class="ctl">Explode
+        <input id="explode" type="range" min="0" max="1" step="0.01" value="0" aria-label="Explode amount">
+      </label>
+      <label class="ctl"><input id="xray" type="checkbox" aria-label="X-ray the shell"> X-ray shell</label>
+      <span class="read" id="read">assembled</span>
+    </div>
+    <p class="hint">Tap a layer to isolate it; tap the background to clear.</p>
+  </figure>
+</main>
+
+<script>
+(() => {
+  const shell = document.getElementById('shell');
+  const board = document.getElementById('board');
+  const batt  = document.getElementById('batt');
+  const axis  = document.getElementById('axis');
+  const layers = [shell, board, batt];
+
+  const state = { explode:0, xray:false, sel:null };
+
+  function render(){
+    const e = state.explode, spread = 100*e;
+    shell.style.transform = `translateY(${-spread}px)`;
+    board.style.transform = `translateY(0px)`;
+    batt.style.transform  = `translateY(${ spread}px)`;
+    // assembly axis spans the exploded extent
+    axis.setAttribute('y1', 124 - spread);
+    axis.setAttribute('y2', 282 + spread);
+    axis.classList.toggle('on', e > 0.02);
+    // x-ray applies to the shell only (see through the cover)
+    shell.classList.toggle('xray', state.xray && !(state.sel==='shell'));
+    // selection: highlight one, dim the rest
+    layers.forEach(l => {
+      l.classList.toggle('sel', state.sel === l.id);
+      l.classList.toggle('dim', state.sel !== null && state.sel !== l.id);
+    });
+    const r = document.getElementById('read');
+    r.textContent = state.sel ? state.sel : (e<0.02 ? 'assembled' : `exploded ${Math.round(e*100)}%`);
+  }
+
+  document.getElementById('explode').oninput = e => { state.explode = +e.target.value; render(); };
+  document.getElementById('xray').onchange   = e => { state.xray = e.target.checked; render(); };
+
+  layers.forEach(l => {
+    const pick = ev => { ev.stopPropagation(); state.sel = (state.sel===l.id? null : l.id); render(); };
+    l.addEventListener('click', pick);
+    l.addEventListener('keydown', ev => { if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); pick(ev);} });
+  });
+  document.querySelector('.stage').addEventListener('click', () => { state.sel=null; render(); });
+
+  render();
+})();
+</script>
+</html>

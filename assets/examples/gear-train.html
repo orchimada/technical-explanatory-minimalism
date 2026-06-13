@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gear train — interactive figure</title>
+<!--
+  GOLD-STANDARD INTERACTIVE FIGURE — continuous mechanism.
+  Demonstrates: state→render model · play/pause + rAF · drag-to-scrub ·
+  live ratio readout · color-as-identity labels · pitch-circle (reveal-hidden) toggle ·
+  prefers-reduced-motion · pause-when-offscreen · dark/light parity · quiet chrome.
+  Self-contained: no build, no network. Copy and swap the geometry.
+-->
+<style>
+  :root{
+    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3;
+    --driver:#d6453d; --driven:#3d7dd6; --accent:#d6453d;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; }
+  }
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
+  main{max-width:680px;margin:0 auto;padding:48px 24px 96px;}
+  h1{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
+  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 28px;}
+  p{font-size:16px;color:var(--ink);}
+  figure{margin:28px 0 0;}
+  .stage{width:100%;height:auto;display:block;touch-action:none;cursor:grab;}
+  .stage:active{cursor:grabbing;}
+  /* quiet chrome — controls whisper */
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:14px;
+    padding-top:14px;border-top:1px solid var(--hair);}
+  button{font:inherit;font-size:14px;color:var(--ink);background:none;
+    border:1px solid var(--hair);border-radius:6px;padding:6px 14px;cursor:pointer;}
+  button:hover{border-color:var(--muted);}
+  label.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
+  input[type=range]{accent-color:var(--accent);width:120px;}
+  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
+  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
+  /* svg classes (shared stroke system) */
+  .struct{stroke:var(--ink);fill:none;stroke-width:2;}
+  .detail{stroke:var(--muted);fill:none;stroke-width:1;}
+  .pitch{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:4 4;opacity:0;transition:opacity .2s;}
+  .pitch.on{opacity:.9;}
+  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
+  .label{font-size:13px;fill:var(--ink);}
+  .desig{font-size:12px;fill:var(--ink);font-family:ui-monospace,"SF Mono",monospace;}
+  text{user-select:none;}
+</style>
+
+<main>
+  <h1>The gear train</h1>
+  <p class="cap">Drag the gears to scrub · press play to run</p>
+
+  <p>Two meshing gears trade speed for the same force. The smaller <b style="color:var(--driven)">driven</b>
+  gear turns faster than the larger <b style="color:var(--driver)">driver</b> — by exactly the ratio of
+  their tooth counts. Drag either gear to feel the coupling; the readout shows the live ratio.</p>
+
+  <figure>
+    <svg class="stage" viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg"
+         stroke-linejoin="round" stroke-linecap="round" aria-label="Two meshing gears">
+      <!-- pitch circles (hidden structure, toggled) -->
+      <circle id="pitchA" class="pitch" cx="250" cy="180" r="120"/>
+      <circle id="pitchB" class="pitch" cx="490" cy="180" r="80"/>
+
+      <!-- driver gear A -->
+      <g id="gearA">
+        <path id="bodyA" class="struct" fill="var(--driver)" fill-opacity=".12"/>
+        <circle class="struct" cx="0" cy="0" r="30"/>
+        <line class="detail" x1="-44" y1="0" x2="44" y2="0"/>
+        <line class="detail" x1="0" y1="-44" x2="0" y2="44"/>
+        <circle cx="0" cy="0" r="4" fill="var(--ink)"/>
+      </g>
+      <!-- driven gear B -->
+      <g id="gearB">
+        <path id="bodyB" class="struct" fill="var(--driven)" fill-opacity=".12"/>
+        <circle class="struct" cx="0" cy="0" r="22"/>
+        <line class="detail" x1="-30" y1="0" x2="30" y2="0"/>
+        <line class="detail" x1="0" y1="-30" x2="0" y2="30"/>
+        <circle cx="0" cy="0" r="4" fill="var(--ink)"/>
+      </g>
+
+      <!-- in-place labels: dot + dashed leader + label -->
+      <circle cx="250" cy="180" r="2.5" fill="var(--ink)"/>
+      <path class="leader" d="M250 180 V322"/>
+      <rect x="150" y="328" width="11" height="11" rx="2" fill="var(--driver)"/>
+      <text x="168" y="338" class="label">Driver</text>
+      <text x="168" y="354" class="desig" id="teethA">18t</text>
+
+      <circle cx="490" cy="180" r="2.5" fill="var(--ink)"/>
+      <path class="leader" d="M490 180 V322"/>
+      <rect x="430" y="328" width="11" height="11" rx="2" fill="var(--driven)"/>
+      <text x="448" y="338" class="label">Driven</text>
+      <text x="448" y="354" class="desig" id="teethB">12t</text>
+    </svg>
+
+    <div class="controls">
+      <button id="play" aria-label="Play or pause">▶ Play</button>
+      <label class="ctl">Speed
+        <input id="speed" type="range" min="0.1" max="3" step="0.1" value="1" aria-label="Speed">
+      </label>
+      <label class="ctl"><input id="pitch" type="checkbox" aria-label="Show pitch circles"> Pitch circles</label>
+      <span class="read" id="ratio">ratio 1.50 : 1</span>
+    </div>
+    <p class="hint">The driven gear completes 1.5 turns for every turn of the driver.</p>
+  </figure>
+</main>
+
+<script>
+(() => {
+  // ---- geometry ---------------------------------------------------------
+  const A = { cx:250, cy:180, R:120, teeth:18, el:document.getElementById('gearA') };
+  const B = { cx:490, cy:180, R:80,  teeth:12, el:document.getElementById('gearB') };
+  const RATIO = A.teeth / B.teeth;                 // driven turns RATIO× per driver turn
+
+  // straight-toothed schematic gear path (teeth occupy first ~half of each pitch)
+  function gearPath(R, teeth){
+    const add = R*0.16, ro = R+add, ri = R-add, ta = 2*Math.PI/teeth;
+    const P = (ang,r)=>`${(Math.cos(ang)*r).toFixed(2)} ${(Math.sin(ang)*r).toFixed(2)}`;
+    let d = '';
+    for(let i=0;i<teeth;i++){
+      const a = i*ta;
+      d += (i? 'L':'M') + P(a, ri);
+      d += 'L'+P(a+ta*0.18, ro) + 'L'+P(a+ta*0.34, ro) + 'L'+P(a+ta*0.50, ri);
+    }
+    return d+'Z';
+  }
+  document.getElementById('bodyA').setAttribute('d', gearPath(A.R, A.teeth));
+  document.getElementById('bodyB').setAttribute('d', gearPath(B.R, B.teeth));
+
+  // ---- state → render ---------------------------------------------------
+  const state = { angle:0, playing:false, speed:1 };          // angle = driver angle (rad)
+  const phaseB = Math.PI/B.teeth;                              // half-tooth offset to mesh
+  function render(){
+    const aDeg = state.angle*180/Math.PI;
+    const bDeg = (-state.angle*RATIO + phaseB)*180/Math.PI;
+    A.el.setAttribute('transform', `translate(${A.cx} ${A.cy}) rotate(${aDeg})`);
+    B.el.setAttribute('transform', `translate(${B.cx} ${B.cy}) rotate(${bDeg})`);
+  }
+
+  // ---- loop (respects reduced motion + offscreen) -----------------------
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let last = null, visible = true;
+  function tick(now){
+    if(last==null) last = now;
+    const dt = Math.min(now-last, 50)/1000; last = now;
+    if(state.playing && visible){ state.angle += state.speed*0.9*dt; render(); }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  new IntersectionObserver(es=>{ visible = es[0].isIntersecting; })
+    .observe(document.querySelector('.stage'));
+
+  // ---- controls ---------------------------------------------------------
+  const playBtn = document.getElementById('play');
+  function setPlaying(p){ state.playing = p; playBtn.textContent = p ? '❚❚ Pause' : '▶ Play'; }
+  playBtn.onclick = () => setPlaying(!state.playing);
+  if(reduce){ /* don't autoplay; user scrubs */ }
+
+  document.getElementById('speed').oninput = e => state.speed = +e.target.value;
+  const pitchA = document.getElementById('pitchA'), pitchB = document.getElementById('pitchB');
+  document.getElementById('pitch').onchange = e => {
+    pitchA.classList.toggle('on', e.target.checked);
+    pitchB.classList.toggle('on', e.target.checked);
+  };
+  document.getElementById('ratio').textContent = `ratio ${RATIO.toFixed(2)} : 1`;
+  document.getElementById('teethA').textContent = A.teeth+'t';
+  document.getElementById('teethB').textContent = B.teeth+'t';
+
+  // ---- drag-to-scrub (drag any gear; angle measured about that gear) ----
+  const svg = document.querySelector('.stage');
+  let drag = null;
+  function svgPoint(ev){
+    const r = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    return { x:(ev.clientX-r.left)/r.width*vb.width, y:(ev.clientY-r.top)/r.height*vb.height };
+  }
+  svg.addEventListener('pointerdown', ev => {
+    const p = svgPoint(ev);
+    // pick the nearer gear; convert its angular drag into driver angle
+    const near = Math.hypot(p.x-A.cx,p.y-A.cy) <= Math.hypot(p.x-B.cx,p.y-B.cy) ? A : B;
+    drag = { g:near, a0:Math.atan2(p.y-near.cy, p.x-near.cx), angle0:state.angle };
+    setPlaying(false); svg.setPointerCapture(ev.pointerId);
+  });
+  svg.addEventListener('pointermove', ev => {
+    if(!drag) return;
+    const p = svgPoint(ev);
+    let d = Math.atan2(p.y-drag.g.cy, p.x-drag.g.cx) - drag.a0;
+    // map the dragged gear's rotation back to the driver angle
+    state.angle = drag.angle0 + (drag.g===A ? d : -d/RATIO);
+    render();
+  });
+  const end = ev => { if(drag){ drag=null; svg.releasePointerCapture?.(ev.pointerId);} };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+
+  render();
+})();
+</script>
+</html>

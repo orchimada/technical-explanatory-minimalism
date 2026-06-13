@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How a four-stroke engine works</title>
+<!--
+  Built with the `design` skill. Combines:
+   • continuous crank-slider mechanism (interactive-figures.md)
+   • the 4-stroke cycle as a STATE MACHINE + linked ring diagram (rules 16/17)
+   • a live P–V (Otto) plot for the physics (rules 15/16, data-honest)
+   • color-as-identity gases, valves, spark; in-place annotation; quiet chrome
+   • one crank angle drives everything; play / scrub / step; dark-light parity.
+  Self-contained: no build, no network.
+-->
+<style>
+  :root{
+    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3; --accent:#d6453d;
+    --piston:#8a8a8e; --rod:#6b6f76; --crank:#46474a;
+    --intake:#3aa676; --exhaust:#d6453d; --spark:#e0a93b;
+    --mix:#3d7dd6; --burn:#e8703a; --spent:#9a8f80;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; --crank:#b8b8bc; }
+  }
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
+  main{max-width:820px;margin:0 auto;padding:48px 24px 96px;}
+  h1{font-size:25px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
+  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 24px;}
+  p{font-size:16px;}
+  figure{margin:24px 0 0;}
+  .stage{width:100%;height:auto;display:block;touch-action:none;cursor:grab;}
+  .stage:active{cursor:grabbing;}
+  .desc{margin-top:16px;padding:14px 16px;border:1px solid var(--hair);border-radius:8px;
+    display:flex;gap:14px;align-items:baseline;}
+  .desc .nm{font-size:15px;font-weight:600;letter-spacing:.02em;white-space:nowrap;}
+  .desc .tx{font-size:15px;color:var(--ink);}
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:14px;
+    padding-top:14px;border-top:1px solid var(--hair);}
+  button{font:inherit;font-size:14px;color:var(--ink);background:none;
+    border:1px solid var(--hair);border-radius:6px;padding:6px 14px;cursor:pointer;}
+  button:hover{border-color:var(--muted);}
+  button.primary{border-color:var(--accent);color:var(--accent);}
+  label.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
+  input[type=range]{accent-color:var(--accent);width:120px;}
+  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
+  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
+  /* shared figure conventions */
+  .struct{stroke:var(--ink);fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+  .detail{stroke:var(--muted);fill:none;stroke-width:1;}
+  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
+  .label{font-size:12.5px;fill:var(--ink);}
+  .desig{font-size:11px;fill:var(--muted);font-family:ui-monospace,monospace;}
+  .axis{stroke:var(--muted);stroke-width:1;}
+  .axlab{font-size:11px;fill:var(--muted);font-family:ui-monospace,monospace;}
+  /* eased moving parts */
+  #intakeValve,#exhaustValve{transition:transform .12s ease-out;}
+  .arc{fill:none;stroke-width:12;stroke-linecap:butt;opacity:.32;transition:opacity .2s,stroke-width .2s;}
+  .arc.active{opacity:1;stroke-width:16;}
+  .arclab{font-size:12px;fill:var(--muted);text-anchor:middle;transition:fill .2s;}
+  .arclab.active{fill:var(--ink);font-weight:600;}
+  text{user-select:none;}
+</style>
+
+<main>
+  <h1>How a four-stroke engine works</h1>
+  <p class="cap">Play it · scrub the crank · or step one stroke at a time</p>
+
+  <p>A petrol engine turns burning fuel into a spinning shaft through one repeating
+  four-stroke cycle — <b style="color:#3aa676">Intake</b>, <b style="color:#3d7dd6">Compression</b>,
+  <b style="color:#e8703a">Power</b>, <b style="color:#9a8f80">Exhaust</b> — that takes
+  <em>two</em> full turns of the crankshaft. The <b style="color:#8a8a8e">piston</b> slides,
+  the <b>connecting rod</b> converts that straight push into rotation, and the valves and
+  spark are timed to the crank angle. Watch all three views move together.</p>
+
+  <figure>
+    <svg class="stage" viewBox="0 0 820 560" xmlns="http://www.w3.org/2000/svg" aria-label="Four-stroke engine cross-section, cycle diagram, and pressure-volume plot">
+
+      <!-- ===================== ENGINE CROSS-SECTION ===================== -->
+      <!-- cylinder head -->
+      <rect class="struct" x="96" y="70" width="128" height="44" rx="4" fill="var(--muted)" fill-opacity=".15"/>
+      <!-- combustion gas (fill set by JS) -->
+      <rect id="gas" x="112" y="114" width="96" height="0" fill="var(--mix)" fill-opacity=".5"/>
+      <!-- cylinder walls -->
+      <line class="struct" x1="110" y1="114" x2="110" y2="330"/>
+      <line class="struct" x1="210" y1="114" x2="210" y2="330"/>
+      <!-- intake valve (left) -->
+      <g id="intakeValve">
+        <line class="struct" x1="138" y1="74" x2="138" y2="112" stroke-width="3"/>
+        <path class="struct" d="M126 112 L150 112 L144 122 L132 122 Z" fill="var(--intake)" fill-opacity=".85"/>
+      </g>
+      <!-- exhaust valve (right) -->
+      <g id="exhaustValve">
+        <line class="struct" x1="182" y1="74" x2="182" y2="112" stroke-width="3"/>
+        <path class="struct" d="M170 112 L194 112 L188 122 L176 122 Z" fill="var(--exhaust)" fill-opacity=".85"/>
+      </g>
+      <!-- spark plug -->
+      <line class="struct" x1="160" y1="62" x2="160" y2="74" stroke-width="3"/>
+      <circle cx="160" cy="60" r="4" fill="var(--spark)" stroke="var(--ink)" stroke-width="1.5"/>
+      <g id="spark" opacity="0">
+        <path d="M160 114 l-6 8 l5 1 l-5 8 l10 -9 l-5 -1 z" fill="var(--spark)" stroke="var(--spark)"/>
+        <circle cx="160" cy="120" r="14" fill="var(--spark)" fill-opacity=".25"/>
+      </g>
+      <!-- piston -->
+      <g id="piston">
+        <rect class="struct" x="112" y="120" width="96" height="42" rx="3" fill="var(--piston)" fill-opacity=".3"/>
+        <line class="detail" x1="112" y1="130" x2="208" y2="130"/>
+        <line class="detail" x1="112" y1="137" x2="208" y2="137"/>
+        <circle cx="160" cy="140" r="7" fill="none" stroke="var(--ink)" stroke-width="2"/>
+      </g>
+      <!-- connecting rod -->
+      <line id="rod" stroke="var(--rod)" stroke-width="9" stroke-linecap="round" x1="160" y1="140" x2="160" y2="360"/>
+      <!-- crankshaft -->
+      <circle class="struct" cx="160" cy="420" r="36" fill="var(--crank)" fill-opacity=".18"/>
+      <g id="crankThrow">
+        <line x1="160" y1="420" x2="160" y2="360" stroke="var(--crank)" stroke-width="12" stroke-linecap="round"/>
+        <circle cx="160" cy="360" r="9" fill="var(--crank)" stroke="var(--ink)" stroke-width="2"/>
+      </g>
+      <circle cx="160" cy="420" r="4" fill="var(--ink)"/>
+      <!-- rotation arrow -->
+      <path class="detail" d="M206 420 A46 46 0 0 1 196 449" marker-end="url(#sm)"/>
+
+      <!-- engine labels (in place) -->
+      <line class="leader" x1="160" y1="60" x2="60" y2="52"/><text x="20" y="49" class="label">Spark</text><text x="20" y="63" class="desig">plug</text>
+      <line class="leader" x1="138" y1="100" x2="74" y2="150"/><text x="14" y="148" class="label">Intake</text><text x="14" y="162" class="desig">valve · open in</text>
+      <line class="leader" x1="182" y1="100" x2="244" y2="150"/><text x="252" y="148" class="label">Exhaust</text><text x="252" y="162" class="desig">valve · open ex</text>
+      <line class="leader" x1="208" y1="141" x2="252" y2="210"/><text x="260" y="208" class="label">Piston</text>
+      <line class="leader" x1="180" y1="300" x2="252" y2="300"/><text x="260" y="297" class="label">Conn. rod</text>
+      <line class="leader" x1="196" y1="420" x2="252" y2="430"/><text x="260" y="428" class="label">Crankshaft</text>
+
+      <defs>
+        <marker id="sm" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker>
+      </defs>
+
+      <!-- ===================== 4-STROKE RING (state machine, rules 16/17) ===================== -->
+      <text x="500" y="58" class="label" font-weight="600" text-anchor="middle">The cycle · 720° crank</text>
+      <circle cx="500" cy="150" r="66" fill="none" stroke="var(--hair)" stroke-width="1"/>
+      <path id="q0" class="arc" stroke="var(--intake)"  d=""/>
+      <path id="q1" class="arc" stroke="var(--mix)"     d=""/>
+      <path id="q2" class="arc" stroke="var(--burn)"    d=""/>
+      <path id="q3" class="arc" stroke="var(--spent)"   d=""/>
+      <text id="lab0" class="arclab" x="582" y="112">Intake</text>
+      <text id="lab1" class="arclab" x="582" y="196">Compress</text>
+      <text id="lab2" class="arclab" x="418" y="196">Power</text>
+      <text id="lab3" class="arclab" x="418" y="112">Exhaust</text>
+      <line id="ringPtr" x1="500" y1="150" x2="500" y2="92" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="500" cy="150" r="4" fill="var(--ink)"/>
+
+      <!-- ===================== P–V PLOT (physics, rules 15/16) ===================== -->
+      <text x="500" y="276" class="label" font-weight="600" text-anchor="middle">Pressure vs. volume · idealized Otto cycle</text>
+      <line class="axis" x1="404" y1="300" x2="404" y2="500"/>
+      <line class="axis" x1="404" y1="500" x2="712" y2="500"/>
+      <text class="axlab" x="396" y="304" text-anchor="end">P</text>
+      <text class="axlab" x="712" y="516" text-anchor="end">V</text>
+      <text class="axlab" x="404" y="516" text-anchor="middle">TDC</text>
+      <text class="axlab" x="704" y="516" text-anchor="middle">BDC</text>
+      <path id="pvLoop" d="" fill="none" stroke="var(--muted)" stroke-width="1.5" opacity=".75"/>
+      <circle id="pvDot" cx="404" cy="500" r="5" fill="var(--accent)"/>
+    </svg>
+
+    <div class="desc">
+      <span class="nm" id="strokeName" style="color:var(--intake)">INTAKE</span>
+      <span class="tx" id="strokeDesc">The intake valve opens and the descending piston draws a fuel–air mixture into the cylinder.</span>
+    </div>
+
+    <div class="controls">
+      <button id="play" class="primary">▶ Play</button>
+      <button id="step">Step stroke ▸</button>
+      <label class="ctl">Speed <input id="speed" type="range" min="0.2" max="2.5" step="0.1" value="1"></label>
+      <button id="reset">Reset</button>
+      <span class="read" id="read">θ 0° · stroke 1/4</span>
+    </div>
+    <p class="hint">Drag the figure left/right to crank it by hand. Spark fires at the top of compression; only the power stroke does work.</p>
+  </figure>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  // ---- geometry & kinematics (crank-slider) -----------------------------
+  const CX=160, CRANKY=420, R=60, L=220, HEAD=114, TDC=120, BORE_L=112, BORE_R=208;
+  const CR=9, GAMMA=1.4, PPEAK=Math.pow(CR,GAMMA)*3;     // idealized Otto
+
+  const pistonTopAt = phi => {                            // px, top face of piston
+    const th = (phi%360)*Math.PI/180;
+    const dist = R*Math.cos(th) + Math.sqrt(L*L - (R*Math.sin(th))**2);
+    return CRANKY - dist - 20;                            // pin is 20px below piston top
+  };
+  const volNorm = phi => (pistonTopAt(phi) - TDC) / (R*2);   // 0 at TDC … 1 at BDC
+  const pressure = phi => {                               // normalized, ~atm = 1
+    const stroke = Math.floor((phi%720)/180);
+    const Vreal = 1 + volNorm(phi)*(CR-1);
+    if(stroke===0) return 0.9;                            // intake (slight depression)
+    if(stroke===1) return Math.pow(CR/Vreal, GAMMA);      // adiabatic compression
+    if(stroke===2) return PPEAK*Math.pow(1/Vreal, GAMMA); // combustion + expansion
+    return 1.15;                                          // exhaust (slight overpressure)
+  };
+
+  // ---- the 4-stroke STATE MACHINE (data) --------------------------------
+  const STROKES = [
+    { id:0, name:'INTAKE',      color:'var(--intake)', gas:'var(--mix)',
+      desc:'The intake valve opens and the descending piston draws a fuel–air mixture into the cylinder.' },
+    { id:1, name:'COMPRESSION', color:'var(--mix)', gas:'var(--mix)',
+      desc:'Both valves close. The rising piston squeezes the mixture into the small clearance volume, raising its pressure and temperature.' },
+    { id:2, name:'POWER',       color:'var(--burn)', gas:'var(--burn)',
+      desc:'The spark ignites the compressed mixture. Expanding hot gas drives the piston down — the only stroke that does work on the crankshaft.' },
+    { id:3, name:'EXHAUST',     color:'var(--spent)', gas:'var(--spent)',
+      desc:'The exhaust valve opens and the rising piston pushes the spent gas out, leaving the cylinder ready for the next intake.' },
+  ];
+
+  // ---- P–V plot mapping + precomputed loop ------------------------------
+  const PX0=404, PX1=704, PY0=500, PY1=302;
+  const pvX = vn => PX0 + vn*(PX1-PX0);
+  const pvY = p  => PY0 - Math.min(p/PPEAK,1)*(PY0-PY1);
+  (function buildLoop(){
+    let d='';
+    for(let phi=0; phi<=720; phi+=3){
+      d += (phi?'L':'M') + pvX(volNorm(phi)).toFixed(1) + ' ' + pvY(pressure(phi)).toFixed(1) + ' ';
+    }
+    $('pvLoop').setAttribute('d', d.trim()+'Z');
+  })();
+
+  // ---- 4-stroke ring arcs -----------------------------------------------
+  function arc(cx,cy,rad,a0,a1){
+    const r0=(a0-90)*Math.PI/180, r1=(a1-90)*Math.PI/180;
+    return `M${(cx+rad*Math.cos(r0)).toFixed(1)} ${(cy+rad*Math.sin(r0)).toFixed(1)} `
+         + `A${rad} ${rad} 0 0 1 ${(cx+rad*Math.cos(r1)).toFixed(1)} ${(cy+rad*Math.sin(r1)).toFixed(1)}`;
+  }
+  $('q0').setAttribute('d', arc(500,150,66,  3, 87));
+  $('q1').setAttribute('d', arc(500,150,66, 93,177));
+  $('q2').setAttribute('d', arc(500,150,66,183,267));
+  $('q3').setAttribute('d', arc(500,150,66,273,357));
+
+  // ---- state + render ---------------------------------------------------
+  const state = { phi:0, playing:false, speed:1, target:null };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function render(){
+    const phi = ((state.phi % 720) + 720) % 720;
+    const stroke = Math.floor(phi/180);
+    const S = STROKES[stroke];
+    const pistonTop = pistonTopAt(phi);
+
+    // piston + rod + crank
+    $('piston').setAttribute('transform', `translate(0 ${(pistonTop-TDC).toFixed(2)})`);
+    const th = (phi%360)*Math.PI/180;
+    const cpx = CX + R*Math.sin(th), cpy = CRANKY - R*Math.cos(th);   // crank pin
+    const rod = $('rod');
+    rod.setAttribute('x1', CX); rod.setAttribute('y1', (pistonTop+20).toFixed(2));
+    rod.setAttribute('x2', cpx.toFixed(2)); rod.setAttribute('y2', cpy.toFixed(2));
+    $('crankThrow').setAttribute('transform', `rotate(${(phi%360).toFixed(2)} ${CX} ${CRANKY})`);
+
+    // gas: fills from head to piston top, colored by stroke
+    const gas = $('gas');
+    gas.setAttribute('y', HEAD); gas.setAttribute('height', Math.max(0,(pistonTop-HEAD)).toFixed(2));
+    gas.setAttribute('fill', S.gas);
+    gas.setAttribute('fill-opacity', stroke===1 ? 0.72 : stroke===2 ? 0.6 : 0.45);
+
+    // valves: intake open during intake, exhaust open during exhaust
+    $('intakeValve').setAttribute('transform',  stroke===0 ? 'translate(0 9)' : 'translate(0 0)');
+    $('exhaustValve').setAttribute('transform', stroke===3 ? 'translate(0 9)' : 'translate(0 0)');
+
+    // spark fires at the top of compression / start of power
+    $('spark').setAttribute('opacity', (phi>=358 && phi<=378) ? 1 : 0);
+
+    // 4-stroke ring: highlight current arc + label, rotate pointer
+    for(let i=0;i<4;i++){
+      $('q'+i).classList.toggle('active', i===stroke);
+      $('lab'+i).classList.toggle('active', i===stroke);
+    }
+    $('ringPtr').setAttribute('transform', `rotate(${(phi/720*360).toFixed(2)} 500 150)`);
+
+    // P–V tracer
+    $('pvDot').setAttribute('cx', pvX(volNorm(phi)).toFixed(1));
+    $('pvDot').setAttribute('cy', pvY(pressure(phi)).toFixed(1));
+
+    // text
+    $('strokeName').textContent = S.name; $('strokeName').style.color = S.color;
+    $('strokeDesc').textContent = S.desc;
+    $('read').textContent = `θ ${Math.round(phi)}° · stroke ${stroke+1}/4 · rev ${phi<360?1:2}/2`;
+  }
+
+  // ---- loop -------------------------------------------------------------
+  let last=null;
+  function tick(now){
+    if(last==null) last=now; const dt=Math.min(now-last,50)/1000; last=now;
+    if(state.playing){ state.phi += state.speed*150*dt; render(); }
+    else if(state.target!=null){
+      const d = state.target - state.phi;
+      if(Math.abs(d) < 0.6){ state.phi = state.target; state.target = null; }
+      else state.phi += d * (reduce?1:0.18);
+      render();
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // ---- controls ---------------------------------------------------------
+  const playBtn=$('play');
+  const setPlay=p=>{ state.playing=p; state.target=null; playBtn.textContent=p?'❚❚ Pause':'▶ Play'; };
+  playBtn.onclick=()=>setPlay(!state.playing);
+  $('speed').oninput=e=>state.speed=+e.target.value;
+  $('step').onclick=()=>{ setPlay(false); state.target = (Math.floor(state.phi/180)+1)*180; };
+  $('reset').onclick=()=>{ setPlay(false); state.target=null; state.phi=0; render(); };
+
+  // drag to crank by hand
+  const svg=document.querySelector('.stage'); let drag=null;
+  svg.addEventListener('pointerdown',e=>{ drag=e.clientX; setPlay(false); state.target=null; svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove',e=>{ if(drag==null)return; state.phi+=(e.clientX-drag)*0.8; drag=e.clientX; render(); });
+  const end=e=>{ if(drag!=null){ drag=null; svg.releasePointerCapture?.(e.pointerId); } };
+  svg.addEventListener('pointerup',end); svg.addEventListener('pointercancel',end);
+
+  render();
+})();
+</script>
+</html>

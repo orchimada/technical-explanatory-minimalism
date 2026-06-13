@@ -1,0 +1,5 @@
+# OS
+.DS_Store
+
+# Claude local machine state (keep launch.json; ignore local permissions)
+.claude/settings.local.json

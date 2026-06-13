@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbiting exploded view — interactive figure</title>
+<!--
+  GOLD-STANDARD INTERACTIVE FIGURE — the "beyond the references" proof.
+  A tiny REAL 3D model + parameterized projection (no WebGL). Demonstrates:
+    • Model-don't-draw (rule 11): parts are 3D boxes in a tree, rendered from data.
+    • Couple the controls (rule 12): one "Open" scrub drives explode + orbit + X-ray.
+    • Depth is navigable (rule 13): the board opens into nested parts with level-of-detail.
+    • Camera has intent (rule 14): view orbits to reveal internals; drag to override.
+  Back-face culling + global painter's-depth sort = solid at any orbit angle.
+  Self-contained: no build, no network. Copy and swap the MODEL.
+-->
+<style>
+  :root{
+    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3; --accent:#d6453d;
+    --shell:#8a8a8e; --board:#3aa676; --batt:#e0a93b; --chip:#d6453d; --port:#3d7dd6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; }
+  }
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
+  main{max-width:720px;margin:0 auto;padding:48px 24px 96px;}
+  h1{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
+  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 28px;}
+  p{font-size:16px;}
+  figure{margin:28px 0 0;}
+  .stage{width:100%;height:auto;display:block;touch-action:none;cursor:grab;}
+  .stage:active{cursor:grabbing;}
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:14px;
+    padding-top:14px;border-top:1px solid var(--hair);}
+  label.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
+  input[type=range]{accent-color:var(--accent);width:150px;}
+  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
+  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
+  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
+  .label{font-size:13px;fill:var(--ink);}
+  .desig{font-size:12px;fill:var(--ink);font-family:ui-monospace,"SF Mono",monospace;}
+  text{user-select:none;}
+</style>
+
+<main>
+  <h1>Orbiting exploded view</h1>
+  <p class="cap">One scrub explodes &amp; orbits · open the board · drag to look around</p>
+
+  <p>The same machinery — a 3D model projected to SVG — gives explode, orbit, and reveal
+  from <em>one</em> control. Pull <b>Open</b> and the unit separates while the view rotates
+  to show you inside; the <b style="color:#8a8a8e">shell</b> turns to wireframe so it
+  doesn't hide the <b style="color:#3aa676">board</b>. Tick <b>Open board</b> to drill into
+  its <b style="color:#d6453d">chip</b> and <b style="color:#3d7dd6">connector</b> — detail
+  that stays hidden until you ask for it.</p>
+
+  <figure>
+    <svg class="stage" viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" aria-label="Orbiting exploded device">
+      <g id="solid"></g>
+      <g id="labels"></g>
+    </svg>
+
+    <div class="controls">
+      <label class="ctl">Open
+        <input id="scrub" type="range" min="0" max="1" step="0.01" value="0" aria-label="Explode and orbit">
+      </label>
+      <label class="ctl"><input id="open" type="checkbox" aria-label="Open the board compartment"> Open board</label>
+      <span class="read" id="read">assembled · 28°</span>
+    </div>
+    <p class="hint">Drag the figure to orbit and tilt. Everything stays solid at any angle.</p>
+  </figure>
+</main>
+
+<script>
+(() => {
+  const SVG = document.querySelector('.stage');
+  const solid = document.getElementById('solid');
+  const labels = document.getElementById('labels');
+  const CX=300, CY=235, SCALE=0.92, ORBIT=0.62, MAXSPREAD=120, LIFT=58;
+  const L = (() => { const v={x:0.32,y:0.86,z:0.5}; const m=Math.hypot(v.x,v.y,v.z); return {x:v.x/m,y:v.y/m,z:v.z/m}; })();
+
+  // ---- THE MODEL: parts as 3D boxes in a tree (rule 11) -----------------
+  // c = center, h = half-extents (model units ≈ px). expl = explode direction.
+  // child parts live in the board's frame and only show on demand (LOD, rule 13).
+  const PARTS = [
+    { id:'shell',   name:'Shell',     desig:'L1 · cover', color:'var(--shell)',
+      c:{x:0,y:26,z:0},  h:{x:118,y:15,z:74}, expl:1 },
+    { id:'board',   name:'Board',     desig:'L2 · logic', color:'var(--board)',
+      c:{x:0,y:0,z:0},   h:{x:118,y:11,z:74}, expl:0 },
+    { id:'battery', name:'Battery',   desig:'L3 · power', color:'var(--batt)',
+      c:{x:0,y:-29,z:0}, h:{x:118,y:18,z:74}, expl:-1 },
+    { id:'chip',    name:'Processor', desig:'U1 · 4×',    color:'var(--chip)',
+      c:{x:-44,y:18,z:-8}, h:{x:26,y:7,z:22}, child:true },
+    { id:'port',    name:'Connector', desig:'J1',         color:'var(--port)',
+      c:{x:66,y:20,z:6},   h:{x:16,y:9,z:30}, child:true },
+  ];
+
+  // ---- projection: yaw(az) → pitch(el) → orthographic (rule 14 machinery)
+  function project(p, az, el){
+    const ca=Math.cos(az), sa=Math.sin(az), ce=Math.cos(el), se=Math.sin(el);
+    const x1 =  p.x*ca + p.z*sa, z1 = -p.x*sa + p.z*ca;
+    const y2 =  p.y*ce - z1*se,  z2 =  p.y*se + z1*ce;
+    return { X:x1, Y:-y2, depth:z2 };
+  }
+  function boxFaces(c, h){
+    const v=(sx,sy,sz)=>({x:c.x+sx*h.x, y:c.y+sy*h.y, z:c.z+sz*h.z});
+    return [
+      {n:{x:0,y:1,z:0},  p:[v(-1,1,-1),v(-1,1,1),v(1,1,1),v(1,1,-1)]},    // top
+      {n:{x:0,y:-1,z:0}, p:[v(-1,-1,1),v(-1,-1,-1),v(1,-1,-1),v(1,-1,1)]},// bottom
+      {n:{x:0,y:0,z:1},  p:[v(-1,-1,1),v(1,-1,1),v(1,1,1),v(-1,1,1)]},    // front
+      {n:{x:0,y:0,z:-1}, p:[v(1,-1,-1),v(-1,-1,-1),v(-1,1,-1),v(1,1,-1)]},// back
+      {n:{x:1,y:0,z:0},  p:[v(1,-1,1),v(1,-1,-1),v(1,1,-1),v(1,1,1)]},    // +x
+      {n:{x:-1,y:0,z:0}, p:[v(-1,-1,-1),v(-1,-1,1),v(-1,1,1),v(-1,1,-1)]},// -x
+    ];
+  }
+
+  // ---- state ------------------------------------------------------------
+  const state = { t:0, openTarget:0, openT:0, azManual:-0.5, el:0.46 };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function render(){
+    const t = state.t, openT = state.openT;
+    const az = state.azManual - t*ORBIT;            // orbit into a 3/4 view as it opens
+    const el = Math.min(0.95, state.el + t*0.13);   // tilt down to look into the stack
+
+    // build live instances with explode + compartment-open offsets
+    const insts = [];
+    for(const part of PARTS){
+      const childVisible = part.child && (openT > 0.02);     // LOD gate (rule 13)
+      if(part.child && !childVisible) continue;
+      const dy = part.child ? openT*LIFT : part.expl*t*MAXSPREAD;
+      const c = { x:part.c.x, y:part.c.y + dy, z:part.c.z };
+      insts.push({ part, c });
+    }
+
+    // collect visible faces from every part → one global painter's sort
+    const faces = [];
+    for(const inst of insts){
+      const xray = inst.part.id==='shell' && (t>0.15 || openT>0.3);  // reveal-in-place
+      for(const f of boxFaces(inst.c, inst.part.h)){
+        if(project(f.n, az, el).depth <= 0.001) continue;            // back-face cull
+        const pts = f.p.map(q => { const s=project(q,az,el);
+          return { X:CX+s.X*SCALE, Y:CY+s.Y*SCALE, d:s.depth }; });
+        const depth = (pts[0].d+pts[1].d+pts[2].d+pts[3].d)/4;
+        const shade = 0.5 + 0.5*(f.n.x*L.x + f.n.y*L.y + f.n.z*L.z); // light from above
+        faces.push({
+          depth, pts, color:inst.part.color,
+          op: xray ? 0.05 : (0.9 - 0.5*shade),
+          dash: xray ? '4 3' : ''
+        });
+      }
+    }
+    faces.sort((a,b)=>a.depth-b.depth);
+
+    let s='';
+    for(const f of faces){
+      const pstr = f.pts.map(p=>`${p.X.toFixed(1)},${p.Y.toFixed(1)}`).join(' ');
+      s += `<polygon points="${pstr}" fill="${f.color}" fill-opacity="${f.op.toFixed(3)}"`
+         + ` stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"`
+         + (f.dash?` stroke-dasharray="${f.dash}"`:'') + `/>`;
+    }
+    solid.innerHTML = s;
+
+    // in-place labels, gated to visible parts (rule 13), vertically de-collided
+    const lx = 588, GAP = 30;
+    const anchors = insts.map(inst => { const s2 = project(inst.c, az, el);
+      return { inst, sx:CX+s2.X*SCALE, sy:CY+s2.Y*SCALE }; });
+    anchors.sort((a,b)=>a.sy-b.sy);
+    let prevY = -1e9;
+    for(const a of anchors){ a.ly = Math.max(a.sy, prevY + GAP); prevY = a.ly; }
+    let lab='';
+    for(const a of anchors){
+      lab += `<circle cx="${a.sx.toFixed(1)}" cy="${a.sy.toFixed(1)}" r="2.5" fill="var(--ink)"/>`
+          +  `<path class="leader" d="M${a.sx.toFixed(1)} ${a.sy.toFixed(1)} L${lx} ${a.ly.toFixed(1)}"/>`
+          +  `<rect x="${lx+6}" y="${(a.ly-9).toFixed(1)}" width="10" height="10" rx="2" fill="${a.inst.part.color}"/>`
+          +  `<text x="${lx+22}" y="${(a.ly-1).toFixed(1)}" class="label">${a.inst.part.name}</text>`
+          +  `<text x="${lx+22}" y="${(a.ly+13).toFixed(1)}" class="desig">${a.inst.part.desig}</text>`;
+    }
+    labels.innerHTML = lab;
+
+    const deg = Math.round(((az*180/Math.PI)%360+360)%360);
+    document.getElementById('read').textContent =
+      (t<0.02 && openT<0.02 ? 'assembled' : (openT>0.5?'board open':`exploded ${Math.round(t*100)}%`)) + ` · ${deg}°`;
+  }
+
+  // ---- ease the compartment open/close + initial frame ------------------
+  function loop(){
+    const d = state.openTarget - state.openT;
+    if(Math.abs(d) > 0.001){ state.openT += d * (reduce?1:0.16); render(); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ---- controls ---------------------------------------------------------
+  document.getElementById('scrub').oninput = e => { state.t = +e.target.value; render(); };
+  document.getElementById('open').onchange = e => { state.openTarget = e.target.checked ? 1 : 0; };
+
+  // drag to orbit (yaw) + tilt (pitch) — manual override of the choreography
+  let drag=null;
+  function pt(ev){ const r=SVG.getBoundingClientRect(); return {x:ev.clientX-r.left, y:ev.clientY-r.top}; }
+  SVG.addEventListener('pointerdown', ev => { drag=pt(ev); SVG.setPointerCapture(ev.pointerId); });
+  SVG.addEventListener('pointermove', ev => {
+    if(!drag) return; const p=pt(ev);
+    state.azManual += (p.x-drag.x)*0.01;
+    state.el = Math.max(0.12, Math.min(0.95, state.el - (p.y-drag.y)*0.005));
+    drag=p; render();
+  });
+  const end = ev => { if(drag){ drag=null; SVG.releasePointerCapture?.(ev.pointerId); } };
+  SVG.addEventListener('pointerup', end);
+  SVG.addEventListener('pointercancel', end);
+
+  render();
+})();
+</script>
+</html>
