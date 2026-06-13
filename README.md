@@ -12,10 +12,6 @@ working, verified gold-standard examples.
 
 <p align="center"><em>One figure built with the skill — <a href="https://orchimada.github.io/technical-explanatory-minimalism/assets/examples/four-stroke-engine.html">open the interactive version ▶</a></em></p>
 
-> The goal isn't to *imitate* hand-crafted explainers like ciechanow.ski. It's to treat
-> a figure as a **model that yields many views** — parametric, navigable, data-driven,
-> and provable — which is the thing a bespoke author can't easily do.
-
 ---
 
 ## What it does
@@ -99,9 +95,7 @@ python3 -m http.server 8000
 
 ## Credits
 
-The design language is distilled from these references, with gratitude:
+Inspired by the awesome works like:
 
-- [Bartosz Ciechanowski — *Mechanical Watch*](https://ciechanow.ski/mechanical-watch/)
-- [Diode Computers](https://www.diode.computer/)
-- [Dan Hollick — *Making Software*](https://www.makingsoftware.com/)
-- [Mechanical Pencil](https://mechanical-pencil.com/products/pen)
+- [Bartosz Ciechanowski — *Mechanical Watch*](https://ciechanow.ski/mechanical-watch/) — interactive, explorable explanations of how mechanisms work.
+- [Dan Hollick — *Making Software*](https://www.makingsoftware.com/) — illustrated explanations of how software works under the hood.
