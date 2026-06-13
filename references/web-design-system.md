@@ -1,7 +1,9 @@
 # Minimalist Web / Interface Design System
 
 Token system for building restrained, information-dense interfaces in the same
-school as the reference sites. Pair with the 10 rules in `../SKILL.md`.
+school as the reference sites. Pair with the 10 rules in `../SKILL.md`. The canonical
+tokens, type, graph paper, and the figure *plate* live in `visual-style.md` — this file
+applies them to full interfaces.
 
 ## Foundations
 
@@ -15,20 +17,21 @@ school as the reference sites. Pair with the 10 rules in `../SKILL.md`.
 ## Color tokens
 
 ```
-:root {
-  --bg:        #f5f3ee;  --surface: #fffdf8;  --border: #e3ded3;
-  --text:      #1d1d1f;  --text-muted: #6b6b70;
-  --accent:    #d6453d;  /* signal / primary action only */
-  /* semantic data hues — stable meaning across the whole UI */
-  --data-1:#3d7dd6; --data-2:#3aa676; --data-3:#e0a93b; --data-4:#d6453d;
+:root{
+  --paper:#faf9f5;  --surface:#ffffff;  --line:#e3e2da;
+  --ink:#1a1a1a;    --sub:#55554f;      --faint:#8a8a82;
+  --red:#d23f2e;    /* accent A — the point / primary action */
+  --blue:#2553c4;   /* accent B — flow / links / compounding  */
 }
-@media (prefers-color-scheme: dark) {
-  :root { --bg:#121212; --surface:#1a1a1a; --border:#2a2a2a;
-          --text:#ececec; --text-muted:#9a9aa0; }
+@media (prefers-color-scheme: dark){
+  :root{ --paper:#16150f; --surface:#1c1b16; --line:#2a2a24;
+         --ink:#ececec; --sub:#b4b4ac; --faint:#7d7d76; }
 }
 ```
 
-Keep the accent rare — when everything is neutral, one accent reads as *signal*.
+**Two accents, no more** — red and blue. Keep them rare; when everything is ink/sub/faint,
+an accent reads as *signal*. (This style is paper-first; the dark map above is a faithful
+adaptation, not the primary.)
 
 ## Type
 
@@ -39,12 +42,25 @@ Keep the accent rare — when everything is neutral, one accent reads as *signal
 - Use small caps or letter-spaced uppercase for section/category labels.
 
 ```
-:root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+:root{
+  --sans:'Inter', -apple-system, system-ui, sans-serif;   /* prose, headlines */
+  --mono:'JetBrains Mono', ui-monospace, monospace;        /* labels, data, chrome */
   --t-xs:13px; --t-sm:15px; --t-md:18px; --t-lg:24px; --t-xl:32px; --t-2xl:48px;
 }
 ```
+
+Headlines: Inter `800`, `letter-spacing:-.035em`, with a red period accent. Document chrome
+(headers, footers, `FIG. N`, meta) is mono, uppercase, ~.68rem, `letter-spacing:.06–.08em`.
+
+## Graph paper & plates
+
+This style sits on faint graph paper, and framed content is a **plate** (border + corner
+brackets + caption). Both are specified in `visual-style.md`:
+
+- **Page** — 28px ink grid (`rgba(26,26,26,.035)`).
+- **Figure/plate body** — 14px *blue* grid (`rgba(37,83,196,.05)`) — the blueprint cue.
+- **Plate** — `1.5px` ink border, white fill, L-shaped corner brackets, an ink-ruled
+  caption row with a red `FIG. N` and a sans caption. Copy `../assets/plate.html`.
 
 ## Spacing & layout
 

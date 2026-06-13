@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orbiting exploded view — interactive figure</title>
@@ -12,63 +13,142 @@
     • Camera has intent (rule 14): view orbits to reveal internals; drag to override.
   Back-face culling + global painter's-depth sort = solid at any orbit angle.
   Self-contained: no build, no network. Copy and swap the MODEL.
+  Presented in the house style (see references/visual-style.md) — the Technical Reference Plate.
 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
   :root{
-    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3; --accent:#d6453d;
-    --shell:#8a8a8e; --board:#3aa676; --batt:#e0a93b; --chip:#d6453d; --port:#3d7dd6;
+    --paper:#faf9f5; --ink:#1a1a1a; --sub:#55554f; --faint:#8a8a82; --line:#e3e2da;
+    --red:#d23f2e; --blue:#2553c4;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', -apple-system, system-ui, sans-serif;
+    /* part-identity hues (documented multi-part exception) — kept distinct */
+    --accent:var(--red);
+    --shell:#8a8a8e; --board:#3aa676; --batt:#e0a93b; --chip:#d23f2e; --port:#2553c4;
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; }
+  body{
+    font-family:var(--sans); color:var(--ink); line-height:1.6; font-size:16px;
+    background:var(--paper);
+    background-image:
+      linear-gradient(rgba(26,26,26,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,26,26,.035) 1px, transparent 1px);
+    background-size:28px 28px;
+    -webkit-font-smoothing:antialiased;
   }
-  html,body{margin:0;background:var(--paper);color:var(--ink);
-    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
-  main{max-width:720px;margin:0 auto;padding:48px 24px 96px;}
-  h1{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
-  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 28px;}
-  p{font-size:16px;}
-  figure{margin:28px 0 0;}
-  .stage{width:100%;height:auto;display:block;touch-action:none;cursor:grab;}
-  .stage:active{cursor:grabbing;}
-  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:14px;
-    padding-top:14px;border-top:1px solid var(--hair);}
-  label.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
-  input[type=range]{accent-color:var(--accent);width:150px;}
-  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
-  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
-  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
-  .label{font-size:13px;fill:var(--ink);}
-  .desig{font-size:12px;fill:var(--ink);font-family:ui-monospace,"SF Mono",monospace;}
-  text{user-select:none;}
+  .wrap{ max-width:880px; margin:0 auto; padding:0 24px; }
+
+  .doc-head{
+    border-bottom:2px solid var(--ink); padding:26px 0 14px;
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub);
+  }
+  .doc-head a{ color:var(--sub); text-decoration:none; }
+  .doc-head a:hover{ color:var(--ink); }
+
+  .titleblock{ padding:44px 0 18px; }
+  .titleblock h1{ font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:16px; }
+  .titleblock h1 .accent{ color:var(--red); }
+  .titleblock .abstract{ font-size:1.02rem; color:var(--sub); max-width:640px; line-height:1.7; }
+  .titleblock .abstract b{ color:var(--ink); font-weight:600; }
+  .titleblock .meta{ margin-top:18px; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; color:var(--faint); text-transform:uppercase; }
+
+  /* ── the plate ── */
+  .figure{ margin:56px 0; border:1.5px solid var(--ink); background:#fff; position:relative; }
+  .figure::before,.figure::after{ content:''; position:absolute; width:10px; height:10px; border:1.5px solid var(--ink); }
+  .figure::before{ top:-6px; left:-6px;  border-right:none; border-bottom:none; }
+  .figure::after { bottom:-6px; right:-6px; border-left:none;  border-top:none;  }
+  .fig-body{
+    padding:28px 24px 18px; overflow-x:auto;
+    background-image:
+      linear-gradient(rgba(37,83,196,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,83,196,.05) 1px, transparent 1px);
+    background-size:14px 14px;
+  }
+  .fig-body svg{ display:block; max-width:100%; height:auto; margin:0 auto; }
+  .fig-caption{ border-top:1.5px solid var(--ink); padding:14px 24px 16px; display:flex; gap:16px; align-items:baseline; }
+  .fig-no{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.08em; color:var(--red); white-space:nowrap; }
+  .fig-text{ font-size:.88rem; color:var(--sub); line-height:1.6; }
+  .fig-text b{ color:var(--ink); font-weight:600; }
+
+  /* ── interactive figure: stage + controls (house chrome) ── */
+  .stage{ width:100%; height:auto; display:block; touch-action:none; cursor:grab; }
+  .stage:active{ cursor:grabbing; }
+
+  .fig-controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:18px; margin-top:18px;
+    padding-top:16px; border-top:1px solid var(--line);
+  }
+  label.ctl{ display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; color:var(--faint); }
+  .fig-controls input[type=range]{ accent-color:var(--red); width:150px; }
+  .fig-controls input[type=checkbox]{ accent-color:var(--red); }
+  .read{ font-family:var(--mono); font-size:.78rem; color:var(--ink); }
+  .hint{ font-family:var(--mono); font-size:.68rem; letter-spacing:.04em; text-transform:uppercase; color:var(--faint); margin-top:12px; }
+
+  /* ── SVG label classes used by the script (kept) ── */
+  text{ font-family:var(--mono); fill:var(--ink); user-select:none; }
+  .leader{ stroke:var(--faint); fill:none; stroke-width:1; stroke-dasharray:3 3; }
+  .label{ font-size:13px; fill:var(--ink); }
+  .desig{ font-size:12px; fill:var(--ink); font-family:var(--mono); }
+
+  .foot{
+    margin-top:64px; border-top:1px solid var(--line); padding:22px 0 48px;
+    display:flex; flex-wrap:wrap; gap:8px 24px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint);
+  }
+  .foot a{ color:var(--sub); text-decoration:none; }
+  @media (max-width:600px){ .fig-caption{ flex-direction:column; gap:4px; } }
 </style>
+</head>
+<body>
+<div class="wrap">
 
-<main>
-  <h1>Orbiting exploded view</h1>
-  <p class="cap">One scrub explodes &amp; orbits · open the board · drag to look around</p>
+  <div class="doc-head">
+    <span>Technical reference · Doc no. ORBIT-05 · Rev. A</span>
+    <span>3D · explode + orbit</span>
+  </div>
 
-  <p>The same machinery — a 3D model projected to SVG — gives explode, orbit, and reveal
-  from <em>one</em> control. Pull <b>Open</b> and the unit separates while the view rotates
-  to show you inside; the <b style="color:#8a8a8e">shell</b> turns to wireframe so it
-  doesn't hide the <b style="color:#3aa676">board</b>. Tick <b>Open board</b> to drill into
-  its <b style="color:#d6453d">chip</b> and <b style="color:#3d7dd6">connector</b> — detail
-  that stays hidden until you ask for it.</p>
+  <div class="titleblock">
+    <h1>Orbiting exploded view<span class="accent">.</span></h1>
+    <p class="abstract">The same machinery — a 3D model projected to SVG — gives explode, orbit, and reveal
+    from <em>one</em> control. Pull <b>Open</b> and the unit separates while the view rotates
+    to show you inside; the <b style="color:#8a8a8e">shell</b> turns to wireframe so it
+    doesn't hide the <b style="color:#3aa676">board</b>. Tick <b>Open board</b> to drill into
+    its <b style="color:#d23f2e">chip</b> and <b style="color:#2553c4">connector</b> — detail
+    that stays hidden until you ask for it.</p>
+    <p class="meta">Method: model, don't draw · Not to scale</p>
+  </div>
 
-  <figure>
-    <svg class="stage" viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" aria-label="Orbiting exploded device">
-      <g id="solid"></g>
-      <g id="labels"></g>
-    </svg>
+  <!-- ════════ FIG 1 — orbiting exploded view ════════ -->
+  <figure class="figure" id="fig1">
+    <div class="fig-body">
+      <svg class="stage" viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" aria-label="Orbiting exploded device">
+        <g id="solid"></g>
+        <g id="labels"></g>
+      </svg>
 
-    <div class="controls">
-      <label class="ctl">Open
-        <input id="scrub" type="range" min="0" max="1" step="0.01" value="0" aria-label="Explode and orbit">
-      </label>
-      <label class="ctl"><input id="open" type="checkbox" aria-label="Open the board compartment"> Open board</label>
-      <span class="read" id="read">assembled · 28°</span>
+      <div class="fig-controls">
+        <label class="ctl">Open
+          <input id="scrub" type="range" min="0" max="1" step="0.01" value="0" aria-label="Explode and orbit">
+        </label>
+        <label class="ctl"><input id="open" type="checkbox" aria-label="Open the board compartment"> Open board</label>
+        <span class="read" id="read">assembled · 28°</span>
+      </div>
+      <p class="hint">Drag the figure to orbit and tilt. Everything stays solid at any angle.</p>
     </div>
-    <p class="hint">Drag the figure to orbit and tilt. Everything stays solid at any angle.</p>
+    <figcaption class="fig-caption">
+      <span class="fig-no">FIG. 1</span>
+      <span class="fig-text">One scrub explodes and orbits the unit, X-rays the shell, and drills into
+      the board — depth that stays hidden until you ask for it.</span>
+    </figcaption>
   </figure>
-</main>
+
+  <footer class="foot">
+    <span>© technical-explanatory-minimalism</span>
+    <span>· drawn with CSS + SVG · 0 frameworks</span>
+  </footer>
+</div>
 
 <script>
 (() => {
@@ -211,4 +291,5 @@
   render();
 })();
 </script>
+</body>
 </html>

@@ -37,8 +37,10 @@ live in `references/design-principles.md` — read it when you need the *why*.
 6. **Quiet chrome, loud content.** Neutral near-paper background, generous whitespace,
    no ornament. All visual energy goes to the figure/content.
 7. **Spatial = causal.** Layout order mirrors how the real system flows or works.
-8. **One coherent house style.** Unified stroke weight, palette, and lighting across
-   all figures in a set.
+8. **One coherent house style.** The house style is the **technical reference plate** —
+   framed, corner-bracketed, captioned schematics on faint graph paper, labelled in
+   monospace, with a strict two-accent (red/blue) palette. It is specified in full in
+   `references/visual-style.md`; follow it for every figure.
 9. **Progressive disclosure.** Reveal complexity on demand; each step adds one idea.
 10. **Curiosity as the entry point.** Start from a felt question; exhaust one thing well.
 
@@ -81,9 +83,10 @@ where the skill stops imitating and starts compounding.
 4. **Decide static vs. interactive.** If the thing *moves* or has hidden states the
    reader should explore, build an **interactive figure** (the default for mechanisms)
    — copy the closest example in `assets/examples/` and follow
-   `references/interactive-figures.md`. If it's a fixed schematic, build static SVG
-   from `assets/starter.svg` per `references/svg-illustration.md`. Either way the
-   stroke system, semantic palette, and annotation patterns are shared.
+   `references/interactive-figures.md`. If it's a fixed schematic, copy
+   `assets/starter.svg`. Either way, present it in the **plate** and follow the house
+   style in `references/visual-style.md` — the class system, two-accent palette, and
+   right-margin callouts are shared.
 5. **Annotate in place** — labels on the artwork, leader lines to parts.
 6. **Self-check against the 10 rules** (and the interactive checklist if applicable),
    then render to the user — write the `.html`/`.svg` file (it appears in the preview
@@ -101,17 +104,23 @@ where the skill stops imitating and starts compounding.
 
 ## Output formats
 
+Every figure is presented as a **plate** in the house style (`references/visual-style.md`):
+framed + corner-bracketed + `FIG. N` caption, on graph paper, monospace callouts, two
+accents. Start from `assets/plate.html` (wrapper + sample) and `assets/starter.svg`.
+
 - **Interactive HTML + JS** is the default for *mechanisms* — explorable figures the
   reader drags, scrubs, and toggles (the ciechanow.ski model). One self-contained file,
   inline SVG + vanilla JS, no build. See `references/interactive-figures.md`.
-- **Static SVG** for fixed schematics — scalable, themeable via CSS variables,
-  annotatable, prints like a datasheet.
+- **Static SVG inside a plate** for fixed schematics — scalable, monospace-labelled,
+  annotated via right-margin callouts; prints like a datasheet.
 - **HTML + CSS** for design-system demos.
 - Files written to `assets/` (or the user's project) appear in the preview panel; use
   the `visualize` tools for a quick inline look.
 
 ## Reference files
 
+- `references/visual-style.md` — **the house style**: tokens, type, graph paper, the plate
+  frame, the SVG class system, callouts, motion. Canonical for all presentation.
 - `references/design-principles.md` — philosophy + per-site analysis (the *why*).
 - `references/interactive-figures.md` — explorable-explanation patterns: state→render
   model, drag/scrub/toggle vocabulary, quiet-chrome controls (the *how* for mechanisms).
@@ -125,7 +134,9 @@ where the skill stops imitating and starts compounding.
   palette, exploded/cutaway/callout techniques (shared by interactive figures too).
 - `references/web-design-system.md` — minimalist UI tokens: palette, type, spacing,
   dark/light parity (the *how* for interfaces).
-- `assets/starter.svg` — themeable static line-art template.
+- `assets/plate.html` — the canonical figure **plate** wrapper (frame, graph paper, caption,
+  chrome, scroll-triggered motion) + a sample figure. Copy this to start any new figure.
+- `assets/starter.svg` — a static figure in the house style (mono labels, callout, accents).
 - `assets/examples/gear-train.html` — gold-standard interactive figure (animation + drag-scrub).
 - `assets/examples/layered-reveal.html` — gold-standard interactive figure (explode + X-ray).
 - `assets/examples/orbit-explode.html` — gold-standard: real-3D coupled explode + orbit +

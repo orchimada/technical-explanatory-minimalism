@@ -65,16 +65,18 @@ A static line-art starting point lives in [`assets/starter.svg`](assets/starter.
 .
 ├── SKILL.md                     # entry point: rules 1–17 + A/B workflows
 ├── references/                  # the "how" — load on demand
+│   ├── visual-style.md          #   THE house style: tokens, plate frame, classes, motion
 │   ├── design-principles.md     #   philosophy + per-site analysis
 │   ├── interactive-figures.md   #   state→render, drag/scrub/toggle, quiet chrome
 │   ├── depth-and-detail.md      #   inner compartments, nesting, level-of-detail
 │   ├── motion-and-camera.md     #   real 3D projection, coupled scrubs, directed camera
 │   ├── state-machines.md        #   model & prove a mechanism's logic
-│   ├── svg-illustration.md      #   static-figure craft (stroke system, palette, callouts)
+│   ├── svg-illustration.md      #   static-figure craft (figure types, callout geometry)
 │   └── web-design-system.md     #   minimalist UI tokens + dark/light parity
 └── assets/
-    ├── starter.svg              # themeable static template
-    └── examples/                # the gold-standard interactive figures
+    ├── plate.html               # canonical figure-plate wrapper + sample (start here)
+    ├── starter.svg              # static figure in the house style
+    └── examples/                # interactive figures (predate the house style)
 ```
 
 ## Using it as a Claude skill

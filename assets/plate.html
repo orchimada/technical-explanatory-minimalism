@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plate template — technical reference style</title>
+<!--
+  CANONICAL WRAPPER for the house style (see references/visual-style.md).
+  Copy this file, swap the <svg> inside .fig-body and the caption. Everything else —
+  graph paper, corner brackets, FIG. N caption, doc/footer chrome, scroll-triggered
+  motion, reduced-motion handling — is the plate, and stays.
+  Fonts: Inter + JetBrains Mono (with system fallbacks if offline).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  :root{
+    --paper:#faf9f5; --ink:#1a1a1a; --sub:#55554f; --faint:#8a8a82; --line:#e3e2da;
+    --red:#d23f2e; --blue:#2553c4;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', -apple-system, system-ui, sans-serif;
+  }
+  body{
+    font-family:var(--sans); color:var(--ink); line-height:1.6; font-size:16px;
+    background:var(--paper);
+    background-image:
+      linear-gradient(rgba(26,26,26,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,26,26,.035) 1px, transparent 1px);
+    background-size:28px 28px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:880px; margin:0 auto; padding:0 24px; }
+
+  .doc-head{
+    border-bottom:2px solid var(--ink); padding:26px 0 14px;
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub);
+  }
+  .doc-head a{ color:var(--sub); text-decoration:none; }
+  .doc-head a:hover{ color:var(--ink); }
+
+  .titleblock{ padding:44px 0 18px; }
+  .titleblock h1{ font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:16px; }
+  .titleblock h1 .accent{ color:var(--red); }
+  .titleblock .abstract{ font-size:1.02rem; color:var(--sub); max-width:640px; line-height:1.7; }
+  .titleblock .abstract b{ color:var(--ink); font-weight:600; }
+  .titleblock .meta{ margin-top:18px; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; color:var(--faint); text-transform:uppercase; }
+
+  /* ── the plate ── */
+  .figure{ margin:56px 0; border:1.5px solid var(--ink); background:#fff; position:relative; }
+  .figure::before,.figure::after{ content:''; position:absolute; width:10px; height:10px; border:1.5px solid var(--ink); }
+  .figure::before{ top:-6px; left:-6px;  border-right:none; border-bottom:none; }
+  .figure::after { bottom:-6px; right:-6px; border-left:none;  border-top:none;  }
+  .fig-body{
+    padding:28px 24px 18px; overflow-x:auto;
+    background-image:
+      linear-gradient(rgba(37,83,196,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,83,196,.05) 1px, transparent 1px);
+    background-size:14px 14px;
+  }
+  .fig-body svg{ display:block; max-width:100%; height:auto; margin:0 auto; }
+  .fig-caption{ border-top:1.5px solid var(--ink); padding:14px 24px 16px; display:flex; gap:16px; align-items:baseline; }
+  .fig-no{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.08em; color:var(--red); white-space:nowrap; }
+  .fig-text{ font-size:.88rem; color:var(--sub); line-height:1.6; }
+  .fig-text b{ color:var(--ink); font-weight:600; }
+
+  /* ── shared SVG classes (house style) ── */
+  text{ font-family:var(--mono); fill:var(--ink); }
+  .lbl{ font-size:11px; font-weight:600; letter-spacing:.03em; }
+  .lbl-s{ font-size:9.5px; fill:var(--faint); letter-spacing:.02em; }
+  .lbl-r{ fill:var(--red); } .lbl-b{ fill:var(--blue); }
+  .wall{ stroke:var(--ink); stroke-width:1.5; fill:none; }
+  .media{ stroke:var(--ink); stroke-width:1.4; fill:none; }
+  .leader{ stroke:var(--faint); stroke-width:1; fill:none; }
+  .reject{ stroke:var(--red); stroke-width:1.3; fill:none; }
+  .caught{ fill:var(--faint); }
+  .node{ fill:#fff; stroke:var(--ink); stroke-width:1.5; }
+
+  /* ── motion: gated by .play, added on scroll-in ── */
+  .token{ opacity:0; }
+  .play .tA{ animation:travel 6s linear infinite; }
+  .play .tB{ animation:travel 6s linear infinite 2s; }
+  .play .tC{ animation:travel 6s linear infinite 4s; }
+  @keyframes travel{
+    0%{ transform:translateX(0); opacity:0 } 6%{ opacity:1 }
+    44%{ transform:translateX(190px); opacity:1 }       /* pauses at the process node */
+    52%{ transform:translateX(190px); opacity:1 }
+    94%{ transform:translateX(380px); opacity:1 } 100%{ transform:translateX(380px); opacity:0 }
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } .token{ opacity:1 !important; } }
+
+  .foot{
+    margin-top:64px; border-top:1px solid var(--line); padding:22px 0 48px;
+    display:flex; flex-wrap:wrap; gap:8px 24px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint);
+  }
+  .foot a{ color:var(--sub); text-decoration:none; }
+  @media (max-width:600px){ .fig-caption{ flex-direction:column; gap:4px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="doc-head">
+    <span>Technical reference · Doc no. PLATE-00 · Rev. A</span>
+    <span>house style template</span>
+  </div>
+
+  <div class="titleblock">
+    <h1>Plate template<span class="accent">.</span></h1>
+    <p class="abstract">The reusable wrapper for every figure in this style — a framed plate
+    on graph paper, monospace callouts, two accents, scroll-triggered motion. Swap the
+    <b>SVG</b> and the caption; keep the chrome. Pure SVG + CSS, no libraries.</p>
+    <p class="meta">Method: figure/ground separation · Not to scale</p>
+  </div>
+
+  <!-- ════════ FIG 1 — sample figure (replace this svg) ════════ -->
+  <figure class="figure" id="fig1">
+    <div class="fig-body">
+      <svg viewBox="0 0 760 240" width="760" height="240">
+        <!-- a three-stage signal path: Input → Process → Output -->
+        <!-- baseline -->
+        <line class="leader" x1="70" y1="120" x2="470" y2="120"/>
+
+        <!-- nodes -->
+        <g><rect class="node" x="40" y="100" width="80" height="40" rx="4"/>
+           <text class="lbl" x="58" y="124">INPUT</text></g>
+        <g><rect class="node" x="230" y="100" width="80" height="40" rx="4"/>
+           <text class="lbl" x="244" y="124">PROCESS</text></g>
+        <g><rect class="node" x="420" y="100" width="80" height="40" rx="4"/>
+           <text class="lbl" x="436" y="124">OUTPUT</text></g>
+
+        <!-- arrowheads along the path -->
+        <polygon class="caught" points="206,114 220,120 206,126"/>
+        <polygon class="caught" points="396,114 410,120 396,126"/>
+
+        <!-- a caught mark (something filtered at the process) -->
+        <circle class="caught" cx="270" cy="84" r="4"/>
+
+        <!-- callout: leader → right-margin block -->
+        <line class="leader" x1="310" y1="120" x2="520" y2="120"/>
+        <text class="lbl"   x="528" y="112">STAGE · PROCESS</text>
+        <text class="lbl-s" x="528" y="126">the working surface — most</text>
+        <text class="lbl-s" x="528" y="138">input is shaped or stopped here.</text>
+
+        <!-- principle note (left margin) -->
+        <text class="lbl-s" x="20" y="180">FLOW →</text>
+        <text class="lbl-s" x="20" y="194">the token threads the path;</text>
+        <text class="lbl-s" x="20" y="208">red is the one that makes it out.</text>
+
+        <!-- animated tokens travelling the path (start at input edge) -->
+        <circle class="token tA" cx="120" cy="120" r="6" fill="var(--ink)"/>
+        <circle class="token tB" cx="120" cy="120" r="6" fill="var(--ink)"/>
+        <circle class="token tC" cx="120" cy="120" r="6" fill="var(--red)"/>
+      </svg>
+    </div>
+    <figcaption class="fig-caption">
+      <span class="fig-no">FIG. 1</span>
+      <span class="fig-text"><b>Sample figure.</b> A three-stage signal path drawn in the house
+      style — ink linework, monospace callout, a caught mark, and a red survivor token. Replace
+      this SVG with your own; the plate, grid, caption, and motion stay as-is.</span>
+    </figcaption>
+  </figure>
+
+  <footer class="foot">
+    <span>© technical-explanatory-minimalism</span>
+    <span>· drawn with CSS + SVG · 0 frameworks</span>
+  </footer>
+</div>
+
+<script>
+  // add .play when a plate scrolls into view → CSS keyframes run
+  new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('play'); });
+  }, { threshold:.3 }).observe(document.getElementById('fig1'));
+</script>
+</body>
+</html>

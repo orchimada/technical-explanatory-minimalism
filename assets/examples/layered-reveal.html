@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Exploded view — interactive figure</title>
@@ -9,109 +10,188 @@
   tap-to-highlight a part · dashed reassembly axis · in-place labels that travel
   with their part · color-as-identity · dark/light parity · quiet chrome.
   Self-contained: no build, no network. Copy and swap the layers.
+  Presented in the house "Technical Reference Plate" style (see references/visual-style.md).
 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
   :root{
-    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3; --accent:#d6453d;
+    --paper:#faf9f5; --ink:#1a1a1a; --sub:#55554f; --faint:#8a8a82; --line:#e3e2da;
+    --red:#d23f2e; --blue:#2553c4;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', -apple-system, system-ui, sans-serif;
+    /* exploded-view part identities — the documented multi-part exception */
+    --accent:var(--red);
     --shell:#8a8a8e; --board:#3aa676; --batt:#e0a93b;
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; }
+  body{
+    font-family:var(--sans); color:var(--ink); line-height:1.6; font-size:16px;
+    background:var(--paper);
+    background-image:
+      linear-gradient(rgba(26,26,26,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,26,26,.035) 1px, transparent 1px);
+    background-size:28px 28px;
+    -webkit-font-smoothing:antialiased;
   }
-  html,body{margin:0;background:var(--paper);color:var(--ink);
-    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
-  main{max-width:680px;margin:0 auto;padding:48px 24px 96px;}
-  h1{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
-  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 28px;}
-  p{font-size:16px;}
-  figure{margin:28px 0 0;}
-  .stage{width:100%;height:auto;display:block;}
-  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:14px;
-    padding-top:14px;border-top:1px solid var(--hair);}
-  label.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
-  input[type=range]{accent-color:var(--accent);width:140px;}
-  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
-  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
-  /* layers */
-  .layer{cursor:pointer;transition:transform .12s ease-out;}
-  .face{stroke:var(--ink);stroke-width:2;stroke-linejoin:round;transition:fill-opacity .2s,stroke .2s;}
-  .face.top  {fill:var(--c);fill-opacity:.42;}
-  .face.front{fill:var(--c);fill-opacity:.72;}
-  .face.side {fill:var(--c);fill-opacity:.92;}
-  .detail{stroke:var(--ink);fill:none;stroke-width:1.5;opacity:.7;}
-  .layer.xray .face{fill-opacity:.06;stroke-dasharray:4 3;}
-  .layer.dim .face{fill-opacity:.14;}
-  .layer.dim .detail{opacity:.15;}
-  .layer.sel .face{stroke:var(--accent);}
-  .axis{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4;opacity:0;transition:opacity .2s;}
-  .axis.on{opacity:.8;}
-  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
-  .label{font-size:13px;fill:var(--ink);}
-  .desig{font-size:12px;fill:var(--ink);font-family:ui-monospace,"SF Mono",monospace;}
-  text{user-select:none;}
+  .wrap{ max-width:880px; margin:0 auto; padding:0 24px; }
+
+  .doc-head{
+    border-bottom:2px solid var(--ink); padding:26px 0 14px;
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub);
+  }
+  .doc-head a{ color:var(--sub); text-decoration:none; }
+  .doc-head a:hover{ color:var(--ink); }
+
+  .titleblock{ padding:44px 0 18px; }
+  .titleblock h1{ font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:16px; }
+  .titleblock h1 .accent{ color:var(--red); }
+  .titleblock .abstract{ font-size:1.02rem; color:var(--sub); max-width:640px; line-height:1.7; }
+  .titleblock .abstract b{ color:var(--ink); font-weight:600; }
+  .titleblock .meta{ margin-top:18px; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; color:var(--faint); text-transform:uppercase; }
+
+  /* ── the plate ── */
+  .figure{ margin:56px 0; border:1.5px solid var(--ink); background:#fff; position:relative; }
+  .figure::before,.figure::after{ content:''; position:absolute; width:10px; height:10px; border:1.5px solid var(--ink); }
+  .figure::before{ top:-6px; left:-6px;  border-right:none; border-bottom:none; }
+  .figure::after { bottom:-6px; right:-6px; border-left:none;  border-top:none;  }
+  .fig-body{
+    padding:28px 24px 18px; overflow-x:auto;
+    background-image:
+      linear-gradient(rgba(37,83,196,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,83,196,.05) 1px, transparent 1px);
+    background-size:14px 14px;
+  }
+  .fig-body svg{ display:block; max-width:100%; height:auto; margin:0 auto; }
+  .fig-caption{ border-top:1.5px solid var(--ink); padding:14px 24px 16px; display:flex; gap:16px; align-items:baseline; }
+  .fig-no{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.08em; color:var(--red); white-space:nowrap; }
+  .fig-text{ font-size:.88rem; color:var(--sub); line-height:1.6; }
+  .fig-text b{ color:var(--ink); font-weight:600; }
+
+  /* ── figure controls (house chrome) ── */
+  .fig-controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:18px;
+    padding:14px 24px; border-top:1.5px solid var(--ink);
+  }
+  label.ctl{ display:flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); }
+  .fig-controls input[type=range]{ accent-color:var(--red); width:140px; }
+  .fig-controls input[type=checkbox]{ accent-color:var(--red); }
+  .read{ font-family:var(--mono); font-size:.72rem; letter-spacing:.04em; color:var(--ink); }
+
+  /* ── SVG label type → monospace (house) ── */
+  text{ font-family:var(--mono); user-select:none; }
+  .label{ font-size:13px; fill:var(--ink); }
+  .desig{ font-size:12px; fill:var(--ink); font-family:var(--mono); }
+
+  /* ── layers (exploded view) ── */
+  .layer{ cursor:pointer; transition:transform .12s ease-out; }
+  .face{ stroke:var(--ink); stroke-width:2; stroke-linejoin:round; transition:fill-opacity .2s,stroke .2s; }
+  .face.top  { fill:var(--c); fill-opacity:.42; }
+  .face.front{ fill:var(--c); fill-opacity:.72; }
+  .face.side { fill:var(--c); fill-opacity:.92; }
+  .detail{ stroke:var(--ink); fill:none; stroke-width:1.5; opacity:.7; }
+  .layer.xray .face{ fill-opacity:.06; stroke-dasharray:4 3; }
+  .layer.dim .face{ fill-opacity:.14; }
+  .layer.dim .detail{ opacity:.15; }
+  .layer.sel .face{ stroke:var(--accent); }
+  .axis{ stroke:var(--faint); stroke-width:1; stroke-dasharray:4 4; opacity:0; transition:opacity .2s; }
+  .axis.on{ opacity:.8; }
+  .leader{ stroke:var(--faint); fill:none; stroke-width:1; stroke-dasharray:3 3; }
+
+  .foot{
+    margin-top:64px; border-top:1px solid var(--line); padding:22px 0 48px;
+    display:flex; flex-wrap:wrap; gap:8px 24px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint);
+  }
+  .foot a{ color:var(--sub); text-decoration:none; }
+  @media (max-width:600px){ .fig-caption{ flex-direction:column; gap:4px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
 </style>
+</head>
+<body>
+<div class="wrap">
 
-<main>
-  <h1>Inside the device</h1>
-  <p class="cap">Drag the slider to explode · tap a layer · toggle X-ray</p>
+  <div class="doc-head">
+    <span>Technical reference · Doc no. EXPL-02 · Rev. A</span>
+    <span>exploded · x-ray</span>
+  </div>
 
-  <p>Three layers stack into the finished unit: the <b style="color:#8a8a8e">shell</b> that
-  you touch, the <b style="color:#3aa676">board</b> that does the work, and the
-  <b style="color:#e0a93b">battery</b> that powers it. Pull them apart to see how they
-  assemble; switch on <b>X-ray</b> to see the board through the shell.</p>
+  <div class="titleblock">
+    <h1>Inside the device<span class="accent">.</span></h1>
+    <p class="abstract">Three layers stack into the finished unit: the <b>shell</b> that
+    you touch, the <b>board</b> that does the work, and the <b>battery</b> that powers it.
+    Pull them apart to see how they assemble; switch on <b>X-ray</b> to see the board
+    through the shell.</p>
+    <p class="meta">Method: reveal the hidden · Not to scale</p>
+  </div>
 
-  <figure>
-    <svg class="stage" viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg" aria-label="Exploded device, three layers">
-      <!-- reassembly axis (behind layers) -->
-      <line id="axis" class="axis" x1="353" y1="124" x2="353" y2="282"/>
+  <!-- ════════ FIG 1 — exploded view (interactive) ════════ -->
+  <figure class="figure" id="fig1">
+    <div class="fig-body">
+      <svg class="stage" viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg" aria-label="Exploded device, three layers">
+        <!-- reassembly axis (behind layers) -->
+        <line id="axis" class="axis" x1="353" y1="124" x2="353" y2="282"/>
 
-      <!-- BATTERY (bottom of stack, drawn first = back) -->
-      <g class="layer" id="batt" style="--c:var(--batt)" tabindex="0" role="button" aria-label="Battery layer">
-        <path class="face top"  d="M200 238 L226 212 L506 212 L480 238 Z"/>
-        <path class="face side" d="M480 238 L506 212 L506 256 L480 282 Z"/>
-        <rect class="face front" x="200" y="238" width="280" height="44" rx="4"/>
-        <text class="detail" x="214" y="266" font-size="18" font-family="ui-monospace,monospace" stroke="none" fill="var(--ink)" opacity=".7">＋        −</text>
-        <line class="leader" x1="506" y1="247" x2="540" y2="247"/>
-        <text x="548" y="244" class="label">Battery</text>
-        <text x="548" y="260" class="desig">L3 · power</text>
-      </g>
+        <!-- BATTERY (bottom of stack, drawn first = back) -->
+        <g class="layer" id="batt" style="--c:var(--batt)" tabindex="0" role="button" aria-label="Battery layer">
+          <path class="face top"  d="M200 238 L226 212 L506 212 L480 238 Z"/>
+          <path class="face side" d="M480 238 L506 212 L506 256 L480 282 Z"/>
+          <rect class="face front" x="200" y="238" width="280" height="44" rx="4"/>
+          <text class="detail" x="214" y="266" font-size="18" font-family="var(--mono)" stroke="none" fill="var(--ink)" opacity=".7">＋        −</text>
+          <line class="leader" x1="506" y1="247" x2="540" y2="247"/>
+          <text x="548" y="244" class="label">Battery</text>
+          <text x="548" y="260" class="desig">L3 · power</text>
+        </g>
 
-      <!-- BOARD (middle) -->
-      <g class="layer" id="board" style="--c:var(--board)" tabindex="0" role="button" aria-label="Board layer">
-        <path class="face top"  d="M200 194 L226 168 L506 168 L480 194 Z"/>
-        <path class="face side" d="M480 194 L506 168 L506 212 L480 238 Z"/>
-        <rect class="face front" x="200" y="194" width="280" height="44" rx="4"/>
-        <rect class="detail" x="300" y="205" width="42" height="22" rx="2"/>
-        <line class="detail" x1="220" y1="216" x2="296" y2="216"/>
-        <line class="detail" x1="346" y1="210" x2="430" y2="210"/>
-        <line class="detail" x1="346" y1="222" x2="430" y2="222"/>
-        <line class="leader" x1="506" y1="203" x2="540" y2="203"/>
-        <text x="548" y="200" class="label">Board</text>
-        <text x="548" y="216" class="desig">L2 · logic</text>
-      </g>
+        <!-- BOARD (middle) -->
+        <g class="layer" id="board" style="--c:var(--board)" tabindex="0" role="button" aria-label="Board layer">
+          <path class="face top"  d="M200 194 L226 168 L506 168 L480 194 Z"/>
+          <path class="face side" d="M480 194 L506 168 L506 212 L480 238 Z"/>
+          <rect class="face front" x="200" y="194" width="280" height="44" rx="4"/>
+          <rect class="detail" x="300" y="205" width="42" height="22" rx="2"/>
+          <line class="detail" x1="220" y1="216" x2="296" y2="216"/>
+          <line class="detail" x1="346" y1="210" x2="430" y2="210"/>
+          <line class="detail" x1="346" y1="222" x2="430" y2="222"/>
+          <line class="leader" x1="506" y1="203" x2="540" y2="203"/>
+          <text x="548" y="200" class="label">Board</text>
+          <text x="548" y="216" class="desig">L2 · logic</text>
+        </g>
 
-      <!-- SHELL (top of stack, drawn last = front) -->
-      <g class="layer" id="shell" style="--c:var(--shell)" tabindex="0" role="button" aria-label="Shell layer">
-        <path class="face top"  d="M200 150 L226 124 L506 124 L480 150 Z"/>
-        <path class="face side" d="M480 150 L506 124 L506 168 L480 194 Z"/>
-        <rect class="face front" x="200" y="150" width="280" height="44" rx="4"/>
-        <circle class="detail" cx="440" cy="172" r="9"/>
-        <line class="leader" x1="506" y1="159" x2="540" y2="159"/>
-        <text x="548" y="156" class="label">Shell</text>
-        <text x="548" y="172" class="desig">L1 · cover</text>
-      </g>
-    </svg>
+        <!-- SHELL (top of stack, drawn last = front) -->
+        <g class="layer" id="shell" style="--c:var(--shell)" tabindex="0" role="button" aria-label="Shell layer">
+          <path class="face top"  d="M200 150 L226 124 L506 124 L480 150 Z"/>
+          <path class="face side" d="M480 150 L506 124 L506 168 L480 194 Z"/>
+          <rect class="face front" x="200" y="150" width="280" height="44" rx="4"/>
+          <circle class="detail" cx="440" cy="172" r="9"/>
+          <line class="leader" x1="506" y1="159" x2="540" y2="159"/>
+          <text x="548" y="156" class="label">Shell</text>
+          <text x="548" y="172" class="desig">L1 · cover</text>
+        </g>
+      </svg>
+    </div>
 
-    <div class="controls">
+    <div class="fig-controls">
       <label class="ctl">Explode
         <input id="explode" type="range" min="0" max="1" step="0.01" value="0" aria-label="Explode amount">
       </label>
       <label class="ctl"><input id="xray" type="checkbox" aria-label="X-ray the shell"> X-ray shell</label>
       <span class="read" id="read">assembled</span>
     </div>
-    <p class="hint">Tap a layer to isolate it; tap the background to clear.</p>
+
+    <figcaption class="fig-caption">
+      <span class="fig-no">FIG. 1</span>
+      <span class="fig-text">Drag the slider to explode the stack, tap a layer to isolate it, and
+      toggle X-ray to see the board through the shell — labels travel with their part as it moves.</span>
+    </figcaption>
   </figure>
-</main>
+
+  <footer class="foot">
+    <span>© technical-explanatory-minimalism</span>
+    <span>· drawn with CSS + SVG · 0 frameworks</span>
+  </footer>
+</div>
 
 <script>
 (() => {
@@ -156,4 +236,5 @@
   render();
 })();
 </script>
+</body>
 </html>

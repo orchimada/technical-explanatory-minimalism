@@ -1,85 +1,54 @@
-<svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg"
-     stroke-linejoin="round" stroke-linecap="round" font-family="ui-sans-serif, system-ui, sans-serif">
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg"
+     stroke-linejoin="round" stroke-linecap="round"
+     font-family="'JetBrains Mono', ui-monospace, monospace">
   <!--
-    STARTER TEMPLATE — technical-explanatory minimalist diagram.
-    Copy this, swap the geometry. Conventions:
-      • colors are CSS variables (dark/light parity for free)
-      • one part = one stable --part-N hue, everywhere
-      • structural geometry uses --ink / --muted only
-      • labels sit on the artwork via dashed leader lines (annotate in place)
-      • monospace for designators/data, sans for descriptive labels
+    STATIC STARTER — house style (see references/visual-style.md).
+    Conventions baked in:
+      • JetBrains Mono labels (.lbl title / .lbl-s annotation) · two accents only
+      • .wall (ink 1.5) structure · .media (ink 1.4) surfaces · .leader (faint) callouts
+      • annotate via a horizontal leader → right-margin .lbl / .lbl-s block
+      • .caught = small faint marks (things stopped) · red = the survivor
+    Drop this <svg> inside assets/plate.html for the framed, graph-paper presentation.
   -->
   <style>
-    :root{
-      --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e;
-      --part-1:#d6453d; --part-2:#e0a93b; --part-3:#3d7dd6; --accent:#d6453d;
-    }
-    @media (prefers-color-scheme: dark){
-      :root{ --paper:#121212; --ink:#ececec; --muted:#7d7d82; }
-    }
-    .struct{ stroke:var(--ink);  fill:none; stroke-width:2; }
-    .detail{ stroke:var(--muted);fill:none; stroke-width:1; }
-    .leader{ stroke:var(--muted);fill:none; stroke-width:1; stroke-dasharray:3 3; }
-    .label { font-size:13px; fill:var(--ink); }
-    .desig { font-size:12px; fill:var(--ink); font-family:ui-monospace,"SF Mono",monospace; }
-    .cap   { font-size:12px; fill:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
-    .fill-1{ fill:var(--part-1); } .fill-2{ fill:var(--part-2); } .fill-3{ fill:var(--part-3); }
-    .arrow { stroke:var(--ink); fill:none; stroke-width:2; }
+    :root{ --ink:#1a1a1a; --sub:#55554f; --faint:#8a8a82; --line:#e3e2da; --red:#d23f2e; --blue:#2553c4; }
+    text{ fill:var(--ink); }
+    .lbl{ font-size:11px; font-weight:600; letter-spacing:.03em; }
+    .lbl-s{ font-size:9.5px; fill:var(--faint); letter-spacing:.02em; }
+    .lbl-r{ fill:var(--red); } .lbl-b{ fill:var(--blue); }
+    .wall{ stroke:var(--ink); stroke-width:1.5; fill:none; }
+    .media{ stroke:var(--ink); stroke-width:1.4; fill:none; }
+    .leader{ stroke:var(--faint); stroke-width:1; fill:none; }
+    .reject{ stroke:var(--red); stroke-width:1.3; fill:none; }
+    .caught{ fill:var(--faint); }
+    .node{ fill:#fff; stroke:var(--ink); stroke-width:1.5; }
   </style>
 
-  <rect width="800" height="460" fill="var(--paper)"/>
+  <!-- three stages in causal order (spatial = causal) -->
+  <line class="leader" x1="70" y1="150" x2="470" y2="150"/>
 
-  <!-- section label -->
-  <text x="40" y="48" class="cap">Flow · part identity · annotation</text>
+  <g><rect class="node" x="40"  y="128" width="84" height="44" rx="4"/><text class="lbl" x="58"  y="154">SOURCE</text></g>
+  <g><rect class="node" x="228" y="128" width="84" height="44" rx="4"/><text class="lbl" x="240" y="154">TRANSFORM</text></g>
+  <g><rect class="node" x="416" y="128" width="84" height="44" rx="4"/><text class="lbl" x="436" y="154">OUTPUT</text></g>
 
-  <!-- ===== three parts in causal order (spatial = causal) ===== -->
-  <!-- part 1 -->
-  <g>
-    <rect class="struct" x="60"  y="150" width="150" height="150" rx="6"/>
-    <circle class="fill-1" cx="135" cy="225" r="34"/>
-    <circle class="detail" cx="135" cy="225" r="34"/>
-  </g>
-  <!-- part 2 -->
-  <g>
-    <rect class="struct" x="325" y="150" width="150" height="150" rx="6"/>
-    <rect class="fill-2" x="360" y="190" width="80" height="70" rx="4"/>
-    <rect class="detail" x="360" y="190" width="80" height="70" rx="4"/>
-  </g>
-  <!-- part 3 -->
-  <g>
-    <rect class="struct" x="590" y="150" width="150" height="150" rx="6"/>
-    <path class="fill-3" d="M620 270 L665 180 L710 270 Z"/>
-    <path class="detail" d="M620 270 L665 180 L710 270 Z"/>
-  </g>
+  <!-- flow arrowheads -->
+  <polygon class="caught" points="206,144 220,150 206,156"/>
+  <polygon class="caught" points="394,144 408,150 394,156"/>
 
-  <!-- flow arrows between parts (direction of force/data) -->
-  <path class="arrow" d="M215 225 H320" marker-end="url(#arrow)"/>
-  <path class="arrow" d="M480 225 H585" marker-end="url(#arrow)"/>
-  <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="var(--ink)"/>
-    </marker>
-  </defs>
+  <!-- a caught mark: something stopped at the transform -->
+  <circle class="caught" cx="268" cy="112" r="4"/>
 
-  <!-- ===== in-place annotations: dot + dashed leader + label ===== -->
-  <!-- part 1 -->
-  <circle cx="135" cy="225" r="2.5" fill="var(--ink)"/>
-  <path class="leader" d="M135 225 V360"/>
-  <rect class="fill-1" x="60" y="372" width="11" height="11" rx="2"/>
-  <text x="78" y="382" class="label">Source</text>
-  <text x="78" y="400" class="desig">P1 · input</text>
+  <!-- callout: leader → right-margin block -->
+  <line class="leader" x1="312" y1="150" x2="522" y2="150"/>
+  <text class="lbl"   x="530" y="142">STAGE · TRANSFORM</text>
+  <text class="lbl-s" x="530" y="156">the working surface — name it,</text>
+  <text class="lbl-s" x="530" y="168">say what passes and what stops.</text>
 
-  <!-- part 2 -->
-  <circle cx="400" cy="225" r="2.5" fill="var(--ink)"/>
-  <path class="leader" d="M400 225 V360"/>
-  <rect class="fill-2" x="325" y="372" width="11" height="11" rx="2"/>
-  <text x="343" y="382" class="label">Transform</text>
-  <text x="343" y="400" class="desig">P2 · process</text>
+  <!-- principle note (left margin) -->
+  <text class="lbl-s" x="20" y="206">FLOW →</text>
+  <text class="lbl-s" x="20" y="220">left to right in causal order;</text>
+  <text class="lbl-s" x="20" y="234">red marks the survivor.</text>
 
-  <!-- part 3 -->
-  <circle cx="665" cy="225" r="2.5" fill="var(--ink)"/>
-  <path class="leader" d="M665 225 V360"/>
-  <rect class="fill-3" x="590" y="372" width="11" height="11" rx="2"/>
-  <text x="608" y="382" class="label">Output</text>
-  <text x="608" y="400" class="desig">P3 · result</text>
+  <!-- the survivor token, in transit toward the output -->
+  <circle cx="360" cy="150" r="5" fill="var(--red)"/>
 </svg>

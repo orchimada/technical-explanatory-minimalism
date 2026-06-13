@@ -1,110 +1,198 @@
 <!doctype html>
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gear train — interactive figure</title>
 <!--
-  GOLD-STANDARD INTERACTIVE FIGURE — continuous mechanism.
+  GOLD-STANDARD INTERACTIVE FIGURE — continuous mechanism, in the house style.
   Demonstrates: state→render model · play/pause + rAF · drag-to-scrub ·
   live ratio readout · color-as-identity labels · pitch-circle (reveal-hidden) toggle ·
-  prefers-reduced-motion · pause-when-offscreen · dark/light parity · quiet chrome.
-  Self-contained: no build, no network. Copy and swap the geometry.
+  prefers-reduced-motion · pause-when-offscreen · quiet chrome.
+  Self-contained: no build. Only network dependency: the Google Fonts <link>.
+  Wrapped as a Technical Reference Plate (see references/visual-style.md).
 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
   :root{
-    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3;
-    --driver:#d6453d; --driven:#3d7dd6; --accent:#d6453d;
+    --paper:#faf9f5; --ink:#1a1a1a; --sub:#55554f; --faint:#8a8a82; --line:#e3e2da;
+    --red:#d23f2e; --blue:#2553c4;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', -apple-system, system-ui, sans-serif;
+    /* part-identity vars used by the SVG (kept; remapped to house accents) */
+    --driver:var(--red); --driven:var(--blue); --accent:var(--red);
+    /* legacy aliases still referenced by the SVG/markup */
+    --muted:var(--faint); --hair:var(--line);
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; }
+  body{
+    font-family:var(--sans); color:var(--ink); line-height:1.6; font-size:16px;
+    background:var(--paper);
+    background-image:
+      linear-gradient(rgba(26,26,26,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,26,26,.035) 1px, transparent 1px);
+    background-size:28px 28px;
+    -webkit-font-smoothing:antialiased;
   }
-  html,body{margin:0;background:var(--paper);color:var(--ink);
-    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
-  main{max-width:680px;margin:0 auto;padding:48px 24px 96px;}
-  h1{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
-  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 28px;}
-  p{font-size:16px;color:var(--ink);}
-  figure{margin:28px 0 0;}
-  .stage{width:100%;height:auto;display:block;touch-action:none;cursor:grab;}
-  .stage:active{cursor:grabbing;}
-  /* quiet chrome — controls whisper */
-  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:14px;
-    padding-top:14px;border-top:1px solid var(--hair);}
-  button{font:inherit;font-size:14px;color:var(--ink);background:none;
-    border:1px solid var(--hair);border-radius:6px;padding:6px 14px;cursor:pointer;}
-  button:hover{border-color:var(--muted);}
-  label.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
-  input[type=range]{accent-color:var(--accent);width:120px;}
-  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
-  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
-  /* svg classes (shared stroke system) */
-  .struct{stroke:var(--ink);fill:none;stroke-width:2;}
-  .detail{stroke:var(--muted);fill:none;stroke-width:1;}
-  .pitch{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:4 4;opacity:0;transition:opacity .2s;}
-  .pitch.on{opacity:.9;}
-  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
-  .label{font-size:13px;fill:var(--ink);}
-  .desig{font-size:12px;fill:var(--ink);font-family:ui-monospace,"SF Mono",monospace;}
-  text{user-select:none;}
+  .wrap{ max-width:880px; margin:0 auto; padding:0 24px; }
+
+  .doc-head{
+    border-bottom:2px solid var(--ink); padding:26px 0 14px;
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub);
+  }
+  .doc-head a{ color:var(--sub); text-decoration:none; }
+  .doc-head a:hover{ color:var(--ink); }
+
+  .titleblock{ padding:44px 0 18px; }
+  .titleblock h1{ font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:16px; }
+  .titleblock h1 .accent{ color:var(--red); }
+  .titleblock .abstract{ font-size:1.02rem; color:var(--sub); max-width:640px; line-height:1.7; }
+  .titleblock .abstract b{ color:var(--ink); font-weight:600; }
+  .titleblock .meta{ margin-top:18px; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; color:var(--faint); text-transform:uppercase; }
+
+  /* ── the plate ── */
+  .figure{ margin:56px 0; border:1.5px solid var(--ink); background:#fff; position:relative; }
+  .figure::before,.figure::after{ content:''; position:absolute; width:10px; height:10px; border:1.5px solid var(--ink); }
+  .figure::before{ top:-6px; left:-6px;  border-right:none; border-bottom:none; }
+  .figure::after { bottom:-6px; right:-6px; border-left:none;  border-top:none;  }
+  .fig-body{
+    padding:28px 24px 18px; overflow-x:auto;
+    background-image:
+      linear-gradient(rgba(37,83,196,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,83,196,.05) 1px, transparent 1px);
+    background-size:14px 14px;
+  }
+  .fig-body svg{ display:block; max-width:100%; height:auto; margin:0 auto; }
+  .fig-caption{ border-top:1.5px solid var(--ink); padding:14px 24px 16px; display:flex; gap:16px; align-items:baseline; }
+  .fig-no{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.08em; color:var(--red); white-space:nowrap; }
+  .fig-text{ font-size:.88rem; color:var(--sub); line-height:1.6; }
+  .fig-text b{ color:var(--ink); font-weight:600; }
+
+  /* ── interactive figure: stage + controls (house chrome) ── */
+  .stage{ width:100%; height:auto; display:block; touch-action:none; cursor:grab; }
+  .stage:active{ cursor:grabbing; }
+
+  .fig-controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:18px;
+    margin-top:18px; padding-top:16px; border-top:1px solid var(--line);
+  }
+  .fig-controls button{
+    font-family:var(--mono); font-size:13px; color:var(--ink); background:#fff;
+    border:1px solid var(--line); border-radius:6px; padding:6px 14px; cursor:pointer;
+    letter-spacing:.04em;
+  }
+  .fig-controls button:hover{ border-color:var(--faint); }
+  /* primary / play button picks up the red accent */
+  .fig-controls #play{ border-color:var(--red); color:var(--red); }
+  .fig-controls #play:hover{ border-color:var(--red); }
+  .fig-controls label.ctl{ display:flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--faint); }
+  .fig-controls input[type=range]{ accent-color:var(--red); width:120px; }
+  .fig-controls input[type=checkbox]{ accent-color:var(--red); }
+  .fig-controls .read{ font-family:var(--mono); font-size:13px; color:var(--ink); }
+  .fig-hint{ font-size:.82rem; color:var(--faint); margin-top:12px; padding:0 0 2px; }
+
+  /* ── shared SVG classes (house style) ── */
+  text{ font-family:var(--mono); fill:var(--ink); user-select:none; }
+  .struct{ stroke:var(--ink); fill:none; stroke-width:2; }
+  .detail{ stroke:var(--faint); fill:none; stroke-width:1; }
+  .pitch{ stroke:var(--faint); fill:none; stroke-width:1; stroke-dasharray:4 4; opacity:0; transition:opacity .2s; }
+  .pitch.on{ opacity:.9; }
+  .leader{ stroke:var(--faint); fill:none; stroke-width:1; stroke-dasharray:3 3; }
+  .label{ font-size:13px; fill:var(--ink); }
+  .desig{ font-size:12px; fill:var(--ink); font-family:var(--mono); }
+
+  .foot{
+    margin-top:64px; border-top:1px solid var(--line); padding:22px 0 48px;
+    display:flex; flex-wrap:wrap; gap:8px 24px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint);
+  }
+  .foot a{ color:var(--sub); text-decoration:none; }
+  @media (max-width:600px){ .fig-caption{ flex-direction:column; gap:4px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
 </style>
+</head>
+<body>
+<div class="wrap">
 
-<main>
-  <h1>The gear train</h1>
-  <p class="cap">Drag the gears to scrub · press play to run</p>
+  <div class="doc-head">
+    <span>Technical reference · Doc no. GEAR-01 · Rev. A</span>
+    <span>meshing gears</span>
+  </div>
 
-  <p>Two meshing gears trade speed for the same force. The smaller <b style="color:var(--driven)">driven</b>
-  gear turns faster than the larger <b style="color:var(--driver)">driver</b> — by exactly the ratio of
-  their tooth counts. Drag either gear to feel the coupling; the readout shows the live ratio.</p>
+  <div class="titleblock">
+    <h1>The gear train<span class="accent">.</span></h1>
+    <p class="abstract">Two meshing gears trade speed for the same force. The smaller <b style="color:var(--driven)">driven</b>
+    gear turns faster than the larger <b style="color:var(--driver)">driver</b> — by exactly the ratio of
+    their tooth counts. Drag either gear to feel the coupling; the readout shows the live ratio.</p>
+    <p class="meta">Method: figure/ground separation · Not to scale</p>
+  </div>
 
-  <figure>
-    <svg class="stage" viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg"
-         stroke-linejoin="round" stroke-linecap="round" aria-label="Two meshing gears">
-      <!-- pitch circles (hidden structure, toggled) -->
-      <circle id="pitchA" class="pitch" cx="250" cy="180" r="120"/>
-      <circle id="pitchB" class="pitch" cx="490" cy="180" r="80"/>
+  <!-- ════════ FIG 1 — meshing gears ════════ -->
+  <figure class="figure" id="fig1">
+    <div class="fig-body">
+      <svg class="stage" viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg"
+           stroke-linejoin="round" stroke-linecap="round" aria-label="Two meshing gears">
+        <!-- pitch circles (hidden structure, toggled) -->
+        <circle id="pitchA" class="pitch" cx="250" cy="180" r="120"/>
+        <circle id="pitchB" class="pitch" cx="490" cy="180" r="80"/>
 
-      <!-- driver gear A -->
-      <g id="gearA">
-        <path id="bodyA" class="struct" fill="var(--driver)" fill-opacity=".12"/>
-        <circle class="struct" cx="0" cy="0" r="30"/>
-        <line class="detail" x1="-44" y1="0" x2="44" y2="0"/>
-        <line class="detail" x1="0" y1="-44" x2="0" y2="44"/>
-        <circle cx="0" cy="0" r="4" fill="var(--ink)"/>
-      </g>
-      <!-- driven gear B -->
-      <g id="gearB">
-        <path id="bodyB" class="struct" fill="var(--driven)" fill-opacity=".12"/>
-        <circle class="struct" cx="0" cy="0" r="22"/>
-        <line class="detail" x1="-30" y1="0" x2="30" y2="0"/>
-        <line class="detail" x1="0" y1="-30" x2="0" y2="30"/>
-        <circle cx="0" cy="0" r="4" fill="var(--ink)"/>
-      </g>
+        <!-- driver gear A -->
+        <g id="gearA">
+          <path id="bodyA" class="struct" fill="var(--driver)" fill-opacity=".12"/>
+          <circle class="struct" cx="0" cy="0" r="30"/>
+          <line class="detail" x1="-44" y1="0" x2="44" y2="0"/>
+          <line class="detail" x1="0" y1="-44" x2="0" y2="44"/>
+          <circle cx="0" cy="0" r="4" fill="var(--ink)"/>
+        </g>
+        <!-- driven gear B -->
+        <g id="gearB">
+          <path id="bodyB" class="struct" fill="var(--driven)" fill-opacity=".12"/>
+          <circle class="struct" cx="0" cy="0" r="22"/>
+          <line class="detail" x1="-30" y1="0" x2="30" y2="0"/>
+          <line class="detail" x1="0" y1="-30" x2="0" y2="30"/>
+          <circle cx="0" cy="0" r="4" fill="var(--ink)"/>
+        </g>
 
-      <!-- in-place labels: dot + dashed leader + label -->
-      <circle cx="250" cy="180" r="2.5" fill="var(--ink)"/>
-      <path class="leader" d="M250 180 V322"/>
-      <rect x="150" y="328" width="11" height="11" rx="2" fill="var(--driver)"/>
-      <text x="168" y="338" class="label">Driver</text>
-      <text x="168" y="354" class="desig" id="teethA">18t</text>
+        <!-- in-place labels: dot + dashed leader + label -->
+        <circle cx="250" cy="180" r="2.5" fill="var(--ink)"/>
+        <path class="leader" d="M250 180 V322"/>
+        <rect x="150" y="328" width="11" height="11" rx="2" fill="var(--driver)"/>
+        <text x="168" y="338" class="label">Driver</text>
+        <text x="168" y="354" class="desig" id="teethA">18t</text>
 
-      <circle cx="490" cy="180" r="2.5" fill="var(--ink)"/>
-      <path class="leader" d="M490 180 V322"/>
-      <rect x="430" y="328" width="11" height="11" rx="2" fill="var(--driven)"/>
-      <text x="448" y="338" class="label">Driven</text>
-      <text x="448" y="354" class="desig" id="teethB">12t</text>
-    </svg>
+        <circle cx="490" cy="180" r="2.5" fill="var(--ink)"/>
+        <path class="leader" d="M490 180 V322"/>
+        <rect x="430" y="328" width="11" height="11" rx="2" fill="var(--driven)"/>
+        <text x="448" y="338" class="label">Driven</text>
+        <text x="448" y="354" class="desig" id="teethB">12t</text>
+      </svg>
 
-    <div class="controls">
-      <button id="play" aria-label="Play or pause">▶ Play</button>
-      <label class="ctl">Speed
-        <input id="speed" type="range" min="0.1" max="3" step="0.1" value="1" aria-label="Speed">
-      </label>
-      <label class="ctl"><input id="pitch" type="checkbox" aria-label="Show pitch circles"> Pitch circles</label>
-      <span class="read" id="ratio">ratio 1.50 : 1</span>
+      <div class="controls fig-controls">
+        <button id="play" aria-label="Play or pause">▶ Play</button>
+        <label class="ctl">Speed
+          <input id="speed" type="range" min="0.1" max="3" step="0.1" value="1" aria-label="Speed">
+        </label>
+        <label class="ctl"><input id="pitch" type="checkbox" aria-label="Show pitch circles"> Pitch circles</label>
+        <span class="read" id="ratio">ratio 1.50 : 1</span>
+      </div>
+      <p class="fig-hint">The driven gear completes 1.5 turns for every turn of the driver.</p>
     </div>
-    <p class="hint">The driven gear completes 1.5 turns for every turn of the driver.</p>
+    <figcaption class="fig-caption">
+      <span class="fig-no">FIG. 1</span>
+      <span class="fig-text"><b>Meshing gears.</b> Two coupled gears trade angular speed for the same
+      force; the driven gear turns faster than the driver by the ratio of their tooth counts. Drag
+      either gear to scrub the coupling, or press play to run.</span>
+    </figcaption>
   </figure>
-</main>
+
+  <footer class="foot">
+    <span>© technical-explanatory-minimalism</span>
+    <span>· drawn with CSS + SVG · 0 frameworks</span>
+  </footer>
+</div>
 
 <script>
 (() => {
@@ -197,4 +285,5 @@
   render();
 })();
 </script>
+</body>
 </html>

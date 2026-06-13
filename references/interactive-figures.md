@@ -61,6 +61,24 @@ notice, then the figure, then the next idea. Decompose: isolate each part in its
 small figure before the combined one (rule 1). Optionally make the figure sticky while
 related prose scrolls past it.
 
+## Presentation & two ways to animate
+
+Figures are presented in the house **plate** (frame + graph paper + `FIG. N` caption +
+mono callouts) — see `visual-style.md` and copy `../assets/plate.html`. Labels use the
+mono `.lbl` / `.lbl-s` classes; structure uses `.wall` / `.media` / `.leader`.
+
+There are two motion patterns; pick by what the figure is for:
+
+- **Scroll-triggered, CSS-keyframe (ambient).** For figures that *play on their own* to
+  illustrate a flow — tokens travelling a path, a wheel turning, compounding rings. An
+  `IntersectionObserver` adds `.play` when the plate scrolls into view; CSS keyframes do
+  the rest. Lightest weight, no JS state. (This is the teardown pattern.)
+- **state→render loop (interactive).** For figures the reader *drives* — drag, scrub,
+  step, toggle. Keep the single `state` object + `render()` from above.
+
+Both honour `prefers-reduced-motion` (ambient figures show their resting state with tokens
+at `opacity:1`; interactive figures simply don't autoplay).
+
 ## Robustness checklist
 
 - [ ] **`prefers-reduced-motion`** — don't autoplay; let the user scrub instead.

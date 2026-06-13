@@ -3,47 +3,55 @@
 How to produce diagrams in the technical-explanatory minimalist style. Pair with
 the 10 rules in `../SKILL.md` and the philosophy in `design-principles.md`.
 
+> **Presentation is governed by `visual-style.md`** (the house style) — tokens, type,
+> the plate frame, the SVG class names (`.wall`/`.media`/`.leader`/`.reject`/`.caught`,
+> `.lbl`/`.lbl-s`), the two-accent palette, the right-margin callout, and motion. This
+> file covers figure *construction* (figure types, exploded/cutaway/callout geometry).
+> Where they differ, `visual-style.md` wins. Finished figures sit inside `../assets/plate.html`.
+
 ## Why SVG
 
 Scalable line-art, themeable via CSS variables (dark/light parity for free),
 annotatable with real text, and it reads like a datasheet. Default to SVG for any
 static diagram; reach for HTML+CSS/JS only when the figure must be interactive.
 
-## The stroke system
+## The stroke system (house classes)
 
-One coherent house style means a fixed, small set of stroke weights:
+Use the named classes from `visual-style.md` — a fixed, small set:
 
-- `--stroke-structural: 2`  — main outlines / part boundaries.
-- `--stroke-detail: 1`      — internal detail, hatching.
-- `--stroke-leader: 1`      — callout leader lines (often dashed).
-- Rounded line joins/caps (`stroke-linejoin="round" stroke-linecap="round"`) for a
-  calm, physical feel. Keep weights consistent across every figure in a set.
+- `.wall`   — ink, 1.5 — primary structure / part boundaries.
+- `.media`  — ink, 1.4 — working surfaces (screens, teeth, hatch, prisms).
+- `.leader` — faint, 1 — callout leader lines.
+- `.reject` — red, 1.3 — the rejected / refracted / "out" path.
+- dividers  — a `.wall` line at `opacity:.4`.
+- `.caught` — faint fill — small marks for things stopped/filtered.
+- Rounded joins/caps for a calm, physical feel. Same weights across every plate in a set.
 
-## Semantic palette (color = identity)
+## Palette
 
-Define colors once as CSS variables and reuse them so a part keeps its hue
-everywhere. Reserve saturated color for *meaning*; everything structural stays neutral.
+Use the house tokens from `visual-style.md`. The default is **two accents only** — red
+for the thing that matters, blue for flow/compounding — over ink/sub/faint/line structure.
 
 ```
-:root {
-  --paper:  #f5f3ee;   /* near-paper background          */
-  --ink:    #1d1d1f;   /* outlines, body text            */
-  --muted:  #8a8a8e;   /* secondary detail, hatching     */
-  /* semantic part colors — assign one per named component, keep stable */
-  --part-1: #d6453d;   /* red    */
-  --part-2: #e0a93b;   /* amber  */
-  --part-3: #3d7dd6;   /* blue   */
-  --part-4: #3aa676;   /* green  */
-  --accent: #d6453d;   /* signal / CTA only              */
-}
-@media (prefers-color-scheme: dark) {
-  :root { --paper:#121212; --ink:#ececec; --muted:#7d7d82; }
+:root{
+  --paper:#faf9f5; --ink:#1a1a1a; --sub:#55554f; --faint:#8a8a82; --line:#e3e2da;
+  --red:#d23f2e;   /* the survivor / the point */
+  --blue:#2553c4;  /* flow / motion / compounding */
 }
 ```
 
-Rules: at most ~4 semantic part colors per figure; structural geometry uses
-`--ink`/`--muted` only; the same component → the same `--part-N` in every figure and
-in the prose that references it.
+**Most schematics need no more than this** — meaning comes from position, label, and the
+two accents, not from a rainbow.
+
+**Exception — multi-part assemblies** (exploded views, the engine cross-section): when a
+figure must distinguish many real parts at once, color *is* identity and a small extra
+palette is justified. Keep it harmonized with the house tokens, assign one stable hue per
+named part (used everywhere that part appears), and still draw all structure in `--ink`:
+
+```
+--part-1:#d23f2e; --part-2:#e0a93b; --part-3:#2553c4; --part-4:#3aa676;  /* ≤4, stable */
+```
+Reach for this only when parts genuinely need telling apart; otherwise stay two-accent.
 
 ## Figure types and how to construct them
 

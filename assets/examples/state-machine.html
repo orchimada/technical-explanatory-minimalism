@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Click-pen mechanism — state machine figure</title>
@@ -12,137 +13,211 @@
   SAME direction on every release, yet the tip alternates — because the seats alternate.
   Self-contained: no build, no network. Copy and swap the MACHINE.
 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
   :root{
-    --paper:#f5f3ee; --ink:#1d1d1f; --muted:#8a8a8e; --hair:#e3ded3; --accent:#d6453d;
-    --metal:#8a8a8e; --deep:#3d7dd6; --shallow:#3aa676;
+    --paper:#faf9f5; --ink:#1a1a1a; --sub:#55554f; --faint:#8a8a82; --line:#e3e2da;
+    --red:#d23f2e; --blue:#2553c4;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', -apple-system, system-ui, sans-serif;
+    /* part-identity tokens used by the SVG/script — kept defined */
+    --accent:var(--red);
+    --metal:#8a8a82; --deep:#2553c4; --shallow:#3aa676; --muted:var(--faint);
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --paper:#121212; --ink:#ececec; --muted:#8a8a8e; --hair:#2a2a2a; }
+  body{
+    font-family:var(--sans); color:var(--ink); line-height:1.6; font-size:16px;
+    background:var(--paper);
+    background-image:
+      linear-gradient(rgba(26,26,26,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,26,26,.035) 1px, transparent 1px);
+    background-size:28px 28px;
+    -webkit-font-smoothing:antialiased;
   }
-  html,body{margin:0;background:var(--paper);color:var(--ink);
-    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;line-height:1.55;}
-  main{max-width:760px;margin:0 auto;padding:48px 24px 96px;}
-  h1{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
-  .cap{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 28px;}
-  p{font-size:16px;}
-  figure{margin:28px 0 0;}
-  .stage{width:100%;height:auto;display:block;}
-  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:14px;
-    padding-top:14px;border-top:1px solid var(--hair);}
-  button{font:inherit;font-size:14px;color:var(--ink);background:none;
-    border:1px solid var(--hair);border-radius:6px;padding:6px 14px;cursor:pointer;}
-  button:hover{border-color:var(--muted);}
-  button.primary{border-color:var(--accent);color:var(--accent);}
-  .read{font-family:ui-monospace,"SF Mono",monospace;font-size:13px;color:var(--ink);}
-  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
-  /* shared figure conventions */
+  .wrap{ max-width:880px; margin:0 auto; padding:0 24px; }
+
+  .doc-head{
+    border-bottom:2px solid var(--ink); padding:26px 0 14px;
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--sub);
+  }
+  .doc-head a{ color:var(--sub); text-decoration:none; }
+  .doc-head a:hover{ color:var(--ink); }
+
+  .titleblock{ padding:44px 0 18px; }
+  .titleblock h1{ font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:16px; }
+  .titleblock h1 .accent{ color:var(--red); }
+  .titleblock .abstract{ font-size:1.02rem; color:var(--sub); max-width:640px; line-height:1.7; }
+  .titleblock .abstract b{ color:var(--ink); font-weight:600; }
+  .titleblock .meta{ margin-top:18px; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; color:var(--faint); text-transform:uppercase; }
+
+  /* ── the plate ── */
+  .figure{ margin:56px 0; border:1.5px solid var(--ink); background:#fff; position:relative; }
+  .figure::before,.figure::after{ content:''; position:absolute; width:10px; height:10px; border:1.5px solid var(--ink); }
+  .figure::before{ top:-6px; left:-6px;  border-right:none; border-bottom:none; }
+  .figure::after { bottom:-6px; right:-6px; border-left:none;  border-top:none;  }
+  .fig-body{
+    padding:28px 24px 18px; overflow-x:auto;
+    background-image:
+      linear-gradient(rgba(37,83,196,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,83,196,.05) 1px, transparent 1px);
+    background-size:14px 14px;
+  }
+  .fig-body svg{ display:block; max-width:100%; height:auto; margin:0 auto; }
+  .fig-caption{ border-top:1.5px solid var(--ink); padding:14px 24px 16px; display:flex; gap:16px; align-items:baseline; }
+  .fig-no{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.08em; color:var(--red); white-space:nowrap; }
+  .fig-text{ font-size:.88rem; color:var(--sub); line-height:1.6; }
+  .fig-text b{ color:var(--ink); font-weight:600; }
+
+  /* ── figure controls (house chrome) ── */
+  .fig-controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:16px;
+    padding:14px 24px; border-top:1.5px solid var(--ink);
+  }
+  button{ font-family:var(--sans); font-size:14px; color:var(--ink); background:#fff;
+    border:1px solid var(--line); border-radius:6px; padding:6px 14px; cursor:pointer; }
+  button:hover{ border-color:var(--faint); }
+  button.primary{ border-color:var(--red); color:var(--red); }
+  .read{ font-family:var(--mono); font-size:13px; color:var(--ink); }
+  .hint{ font-size:13px; color:var(--faint); margin:10px 24px 0; font-family:var(--mono); }
+
+  /* ── shared figure conventions (mapped to house tokens) ── */
   .struct{stroke:var(--ink);fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
-  .detail{stroke:var(--muted);fill:none;stroke-width:1;}
-  .leader{stroke:var(--muted);fill:none;stroke-width:1;stroke-dasharray:3 3;}
-  .label{font-size:13px;fill:var(--ink);}
-  .desig{font-size:12px;fill:var(--muted);font-family:ui-monospace,"SF Mono",monospace;}
+  .detail{stroke:var(--faint);fill:none;stroke-width:1;}
+  .leader{stroke:var(--faint);fill:none;stroke-width:1;stroke-dasharray:3 3;}
+  .label{font-size:13px;fill:var(--ink);font-family:var(--mono);}
+  .desig{font-size:12px;fill:var(--faint);font-family:var(--mono);}
   /* animated, eased moving parts */
   #plunger,#tip{transition:transform .18s ease-out;}
   #cam{transition:transform .45s cubic-bezier(.5,0,.2,1);}
   /* state diagram */
-  .node rect{fill:var(--paper);stroke:var(--muted);stroke-width:1.5;transition:stroke .2s,fill .2s;}
-  .node .nm{font-size:13px;fill:var(--ink);font-weight:600;}
-  .node .sub{font-size:11px;fill:var(--muted);font-family:ui-monospace,monospace;}
-  .node.active rect{stroke:var(--accent);stroke-width:2.5;fill:color-mix(in srgb,var(--accent) 9%,var(--paper));}
-  .edge{stroke:var(--muted);fill:none;stroke-width:1.5;transition:stroke .2s,stroke-width .2s;}
+  .node rect{fill:#fff;stroke:var(--faint);stroke-width:1.5;transition:stroke .2s,fill .2s;}
+  .node .nm{font-size:13px;fill:var(--ink);font-weight:600;font-family:var(--mono);}
+  .node .sub{font-size:11px;fill:var(--faint);font-family:var(--mono);}
+  .node.active rect{stroke:var(--accent);stroke-width:2.5;fill:color-mix(in srgb,var(--accent) 9%,#fff);}
+  .edge{stroke:var(--faint);fill:none;stroke-width:1.5;transition:stroke .2s,stroke-width .2s;}
   .edge.active{stroke:var(--accent);stroke-width:2.5;}
-  .elabel{font-size:11px;fill:var(--muted);font-family:ui-monospace,monospace;}
+  .elabel{font-size:11px;fill:var(--faint);font-family:var(--mono);}
   .elabel.active{fill:var(--accent);}
-  text{user-select:none;}
+  text{font-family:var(--mono);fill:var(--ink);user-select:none;}
+
+  .foot{
+    margin-top:64px; border-top:1px solid var(--line); padding:22px 0 48px;
+    display:flex; flex-wrap:wrap; gap:8px 24px;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint);
+  }
+  .foot a{ color:var(--sub); text-decoration:none; }
+  @media (max-width:600px){ .fig-caption{ flex-direction:column; gap:4px; } }
 </style>
+</head>
+<body>
+<div class="wrap">
 
-<main>
-  <h1>The click pen, proven</h1>
-  <p class="cap">Press push, then release · or hit Click! · watch the diagram</p>
+  <div class="doc-head">
+    <span>Technical reference · Doc no. STATE-03 · Rev. A</span>
+    <span>state machine</span>
+  </div>
 
-  <p>One push-button drives a pen that toggles. The trick is a rotating <b style="color:var(--ink)">cam</b>:
-  every <b>release</b> rotates it one notch in the <em>same</em> direction, but the notches alternate
-  between <b style="color:#3d7dd6">deep</b> (tip in) and <b style="color:#3aa676">shallow</b> (tip out).
-  Step through it and the diagram proves the four-state cycle — no hand-waving.</p>
+  <div class="titleblock">
+    <h1>The click pen, proven<span class="accent">.</span></h1>
+    <p class="abstract">One push-button drives a pen that toggles. The trick is a rotating <b>cam</b>:
+    every <b>release</b> rotates it one notch in the <em>same</em> direction, but the notches alternate
+    between <b>deep</b> (tip in) and <b>shallow</b> (tip out).
+    Step through it and the diagram proves the four-state cycle — no hand-waving.</p>
+    <p class="meta">Method: mechanism = state machine · Not to scale</p>
+  </div>
 
-  <figure>
-    <svg class="stage" viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg" aria-label="Click pen mechanism and its state diagram">
+  <!-- ════════ FIG 1 — click-pen state machine ════════ -->
+  <figure class="figure" id="fig1">
+    <div class="fig-body">
+      <svg class="stage" viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg" aria-label="Click pen mechanism and its state diagram">
 
-      <!-- ============ MECHANISM (left) ============ -->
-      <g id="plunger">
-        <rect class="struct" x="150" y="44" width="40" height="26" rx="4" fill="var(--metal)" fill-opacity=".25"/>
-        <line class="struct" x1="170" y1="70" x2="170" y2="120"/>
-      </g>
-      <!-- barrel -->
-      <rect class="struct" x="140" y="120" width="60" height="232" rx="8"/>
-      <!-- rotating cam (one notch per release) -->
-      <g id="cam">
-        <circle class="detail" cx="170" cy="248" r="40"/>
-        <!-- 8 seats, alternating deep/shallow, generated by JS -->
-        <g id="seats"></g>
-      </g>
-      <!-- fixed follower pointing into the seat at top of the cam -->
-      <path class="struct" d="M170 200 l-7 -12 l14 0 z" fill="var(--ink)"/>
-      <!-- pen tip -->
-      <g id="tip">
-        <path class="struct" d="M158 352 L182 352 L176 372 L170 384 L164 372 Z" fill="var(--accent)" fill-opacity=".8"/>
-      </g>
+        <!-- ============ MECHANISM (left) ============ -->
+        <g id="plunger">
+          <rect class="struct" x="150" y="44" width="40" height="26" rx="4" fill="var(--metal)" fill-opacity=".25"/>
+          <line class="struct" x1="170" y1="70" x2="170" y2="120"/>
+        </g>
+        <!-- barrel -->
+        <rect class="struct" x="140" y="120" width="60" height="232" rx="8"/>
+        <!-- rotating cam (one notch per release) -->
+        <g id="cam">
+          <circle class="detail" cx="170" cy="248" r="40"/>
+          <!-- 8 seats, alternating deep/shallow, generated by JS -->
+          <g id="seats"></g>
+        </g>
+        <!-- fixed follower pointing into the seat at top of the cam -->
+        <path class="struct" d="M170 200 l-7 -12 l14 0 z" fill="var(--ink)"/>
+        <!-- pen tip -->
+        <g id="tip">
+          <path class="struct" d="M158 352 L182 352 L176 372 L170 384 L164 372 Z" fill="var(--accent)" fill-opacity=".8"/>
+        </g>
 
-      <!-- in-place labels -->
-      <line class="leader" x1="190" y1="57" x2="236" y2="57"/>
-      <text x="244" y="54" class="label">Button</text><text x="244" y="69" class="desig">push ▼</text>
-      <line class="leader" x1="210" y1="248" x2="236" y2="248"/>
-      <text x="244" y="245" class="label">Cam</text><text x="244" y="260" class="desig" id="camRead">notch 0</text>
-      <line class="leader" x1="170" y1="378" x2="236" y2="378"/>
-      <text x="244" y="375" class="label">Tip</text><text x="244" y="390" class="desig" id="tipRead">retracted</text>
+        <!-- in-place labels -->
+        <line class="leader" x1="190" y1="57" x2="236" y2="57"/>
+        <text x="244" y="54" class="label">Button</text><text x="244" y="69" class="desig">push ▼</text>
+        <line class="leader" x1="210" y1="248" x2="236" y2="248"/>
+        <text x="244" y="245" class="label">Cam</text><text x="244" y="260" class="desig" id="camRead">notch 0</text>
+        <line class="leader" x1="170" y1="378" x2="236" y2="378"/>
+        <text x="244" y="375" class="label">Tip</text><text x="244" y="390" class="desig" id="tipRead">retracted</text>
 
-      <!-- ============ STATE DIAGRAM (right) ============ -->
-      <defs>
-        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
-        </marker>
-        <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
-        </marker>
-      </defs>
+        <!-- ============ STATE DIAGRAM (right) ============ -->
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+          <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
 
-      <!-- edges (drawn first, behind nodes) -->
-      <g id="edges">
-        <path class="edge" id="e-S0-S1" d="M455 170 V286" marker-end="url(#ar)"/>
-        <path class="edge" id="e-S1-S2" d="M510 312 H600" marker-end="url(#ar)"/>
-        <path class="edge" id="e-S2-S3" d="M655 286 V170" marker-end="url(#ar)"/>
-        <path class="edge" id="e-S3-S0" d="M600 142 H510" marker-end="url(#ar)"/>
-        <text class="elabel" id="l-S0-S1" x="463" y="232">push</text>
-        <text class="elabel" id="l-S1-S2" x="535" y="328" text-anchor="middle">release</text>
-        <text class="elabel" id="l-S2-S3" x="663" y="232">push</text>
-        <text class="elabel" id="l-S3-S0" x="555" y="134" text-anchor="middle">release</text>
-      </g>
+        <!-- edges (drawn first, behind nodes) -->
+        <g id="edges">
+          <path class="edge" id="e-S0-S1" d="M455 170 V286" marker-end="url(#ar)"/>
+          <path class="edge" id="e-S1-S2" d="M510 312 H600" marker-end="url(#ar)"/>
+          <path class="edge" id="e-S2-S3" d="M655 286 V170" marker-end="url(#ar)"/>
+          <path class="edge" id="e-S3-S0" d="M600 142 H510" marker-end="url(#ar)"/>
+          <text class="elabel" id="l-S0-S1" x="463" y="232">push</text>
+          <text class="elabel" id="l-S1-S2" x="535" y="328" text-anchor="middle">release</text>
+          <text class="elabel" id="l-S2-S3" x="663" y="232">push</text>
+          <text class="elabel" id="l-S3-S0" x="555" y="134" text-anchor="middle">release</text>
+        </g>
 
-      <!-- nodes -->
-      <g class="node" id="n-S0"><rect x="400" y="120" width="110" height="44" rx="6"/>
-        <text class="nm" x="455" y="140" text-anchor="middle">Retracted</text>
-        <text class="sub" x="455" y="156" text-anchor="middle">S0 · tip in</text></g>
-      <g class="node" id="n-S3"><rect x="600" y="120" width="110" height="44" rx="6"/>
-        <text class="nm" x="655" y="140" text-anchor="middle">Depressed</text>
-        <text class="sub" x="655" y="156" text-anchor="middle">S3 · held out</text></g>
-      <g class="node" id="n-S1"><rect x="400" y="290" width="110" height="44" rx="6"/>
-        <text class="nm" x="455" y="310" text-anchor="middle">Depressed</text>
-        <text class="sub" x="455" y="326" text-anchor="middle">S1 · held in</text></g>
-      <g class="node" id="n-S2"><rect x="600" y="290" width="110" height="44" rx="6"/>
-        <text class="nm" x="655" y="310" text-anchor="middle">Extended</text>
-        <text class="sub" x="655" y="326" text-anchor="middle">S2 · tip out</text></g>
-    </svg>
+        <!-- nodes -->
+        <g class="node" id="n-S0"><rect x="400" y="120" width="110" height="44" rx="6"/>
+          <text class="nm" x="455" y="140" text-anchor="middle">Retracted</text>
+          <text class="sub" x="455" y="156" text-anchor="middle">S0 · tip in</text></g>
+        <g class="node" id="n-S3"><rect x="600" y="120" width="110" height="44" rx="6"/>
+          <text class="nm" x="655" y="140" text-anchor="middle">Depressed</text>
+          <text class="sub" x="655" y="156" text-anchor="middle">S3 · held out</text></g>
+        <g class="node" id="n-S1"><rect x="400" y="290" width="110" height="44" rx="6"/>
+          <text class="nm" x="455" y="310" text-anchor="middle">Depressed</text>
+          <text class="sub" x="455" y="326" text-anchor="middle">S1 · held in</text></g>
+        <g class="node" id="n-S2"><rect x="600" y="290" width="110" height="44" rx="6"/>
+          <text class="nm" x="655" y="310" text-anchor="middle">Extended</text>
+          <text class="sub" x="655" y="326" text-anchor="middle">S2 · tip out</text></g>
+      </svg>
+    </div>
 
-    <div class="controls">
+    <div class="fig-controls">
       <button id="act" class="primary">Push ▼</button>
       <button id="click">Click! (push + release)</button>
       <button id="reset">Reset</button>
       <span class="read" id="state">S0 · Retracted</span>
     </div>
     <p class="hint">Each <b>release</b> rotates the cam +45° — the same way every time. The tip alternates because the seats do.</p>
+
+    <figcaption class="fig-caption">
+      <span class="fig-no">FIG. 1</span>
+      <span class="fig-text">Press push, then release · or hit Click! · watch the diagram. The click cycle modelled as states + transitions; the mechanism renders from the current state while the linked diagram lights up the active state and the transition just taken.</span>
+    </figcaption>
   </figure>
-</main>
+
+  <footer class="foot">
+    <span>© technical-explanatory-minimalism</span>
+    <span>· drawn with CSS + SVG · 0 frameworks</span>
+  </footer>
+</div>
 
 <script>
 (() => {
