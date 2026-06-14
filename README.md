@@ -10,7 +10,7 @@ working, verified gold-standard examples.
 
 ![A four-stroke engine figure built with this skill: cross-section, the cycle as a state diagram, and a live pressure–volume plot](assets/poster-engine.svg)
 
-<p align="center"><em>One figure built with the skill — <a href="https://orchimada.github.io/technical-explanatory-minimalism/assets/examples/four-stroke-engine.html">open the interactive version ▶</a></em></p>
+<p align="center"><em>One figure built with the skill — <a href="https://orchimada.github.io/assets/diagrams/examples/four-stroke-engine.html">open the interactive version ▶</a></em></p>
 
 ---
 
@@ -42,16 +42,16 @@ mechanism = state machine.
 ## Gallery — gold-standard examples
 
 Self-contained, verified in light **and** dark mode. Each title links to a **live, runnable
-demo** ([all of them here](https://orchimada.github.io/technical-explanatory-minimalism/)); the
+demo** ([all of them here](https://orchimada.github.io/diagram-skill.html)); the
 source link opens the single `.html` file.
 
 | Example | Demonstrates |
 |---|---|
-| [**Four-stroke engine** ▶](https://orchimada.github.io/technical-explanatory-minimalism/assets/examples/four-stroke-engine.html) · [src](assets/examples/four-stroke-engine.html) | **Flagship.** A four-stroke engine: crank-slider mechanism + the cycle as a state machine + a live P–V (Otto) plot, all driven by one crank angle. Play / scrub / step. |
-| [**Orbiting exploded view** ▶](https://orchimada.github.io/technical-explanatory-minimalism/assets/examples/orbit-explode.html) · [src](assets/examples/orbit-explode.html) | Real 3D from a parameterized SVG projection — one scrub couples explode + orbit, with an openable nested compartment and level-of-detail. |
-| [**Click-pen state machine** ▶](https://orchimada.github.io/technical-explanatory-minimalism/assets/examples/state-machine.html) · [src](assets/examples/state-machine.html) | A click-pen modelled as a state machine with a linked, highlighting state diagram — *proves* the logic instead of animating it. |
-| [**Layered reveal** ▶](https://orchimada.github.io/technical-explanatory-minimalism/assets/examples/layered-reveal.html) · [src](assets/examples/layered-reveal.html) | Exploded view + X-ray toggle + tap-to-isolate, with labels that travel with their part. |
-| [**Gear train** ▶](https://orchimada.github.io/technical-explanatory-minimalism/assets/examples/gear-train.html) · [src](assets/examples/gear-train.html) | Continuous mechanism: meshing gears, play/pause, drag-to-scrub, live ratio readout. |
+| [**Four-stroke engine** ▶](https://orchimada.github.io/assets/diagrams/examples/four-stroke-engine.html) · [src](assets/examples/four-stroke-engine.html) | **Flagship.** A four-stroke engine: crank-slider mechanism + the cycle as a state machine + a live P–V (Otto) plot, all driven by one crank angle. Play / scrub / step. |
+| [**Orbiting exploded view** ▶](https://orchimada.github.io/assets/diagrams/examples/orbit-explode.html) · [src](assets/examples/orbit-explode.html) | Real 3D from a parameterized SVG projection — one scrub couples explode + orbit, with an openable nested compartment and level-of-detail. |
+| [**Click-pen state machine** ▶](https://orchimada.github.io/assets/diagrams/examples/state-machine.html) · [src](assets/examples/state-machine.html) | A click-pen modelled as a state machine with a linked, highlighting state diagram — *proves* the logic instead of animating it. |
+| [**Layered reveal** ▶](https://orchimada.github.io/assets/diagrams/examples/layered-reveal.html) · [src](assets/examples/layered-reveal.html) | Exploded view + X-ray toggle + tap-to-isolate, with labels that travel with their part. |
+| [**Gear train** ▶](https://orchimada.github.io/assets/diagrams/examples/gear-train.html) · [src](assets/examples/gear-train.html) | Continuous mechanism: meshing gears, play/pause, drag-to-scrub, live ratio readout. |
 
 A static line-art starting point lives in [`assets/starter.svg`](assets/starter.svg).
 
